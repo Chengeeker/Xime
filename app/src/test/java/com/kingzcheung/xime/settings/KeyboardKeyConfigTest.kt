@@ -12,7 +12,7 @@ class KeyboardKeyConfigTest {
     }
 
     @Test
-    fun `未配置时返回默认值`() {
+    fun `显式圆角覆盖默认值`() {
         val cfg = parse("key:\n  corner_radius: 8")!!
         assertEquals(8, cfg.cornerRadius)
         assertNull(cfg.spacingX)
@@ -24,7 +24,7 @@ class KeyboardKeyConfigTest {
         val cfg = parse("key:\n  spacing_x: 3\n  spacing_y: 5.5")!!
         assertEquals(3f, cfg.spacingX!!, 0.001f)
         assertEquals(5.5f, cfg.spacingY!!, 0.001f)
-        assertEquals(8, cfg.cornerRadius)
+        assertEquals(6, cfg.cornerRadius)
     }
 
     @Test

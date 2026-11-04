@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -14,18 +16,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.twotone.Straighten
 import androidx.compose.material.icons.twotone.Storefront
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -38,9 +42,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.xime.settings.SettingsPreferences
+import com.kingzcheung.xime.ui.keyboard.KeyboardResizeBounds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +55,14 @@ fun LayoutDisplaySettingsContent(
     onNavigateToMarket: () -> Unit = {},
 ) {
     val context = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.screenWidthDp > configuration.screenHeightDp
+    val heightBounds = remember(configuration.screenHeightDp, isLandscape) {
+        KeyboardResizeBounds.heightBoundsDp(configuration.screenHeightDp, isLandscape)
+    }
+    val marginMax = remember(configuration.screenWidthDp) {
+        KeyboardResizeBounds.maxHorizontalMarginDp(configuration.screenWidthDp)
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -56,7 +70,7 @@ fun LayoutDisplaySettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_bujuyuxianshi)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -78,7 +92,69 @@ fun LayoutDisplaySettingsContent(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             item {
-                SettingsSection(title = tr(R.string.s_jianpanbuju), content = {
+                SettingsSection(title = "键盘尺寸", content = {
+                    val heightPref = SettingsPreferences.getKeyboardHeightDp(context, isLandscape)
+                        .coerceIn(heightBounds.first, heightBounds.last)
+                    var keyboardHeight by remember(isLandscape, configuration.screenHeightDp) {
+                        mutableStateOf(heightPref.toFloat())
+                    }
+                    DimensionSlider(
+                        title = "键盘高度",
+                        value = keyboardHeight,
+                        valueLabel = "${keyboardHeight.toInt()} dp",
+                        range = heightBounds.first.toFloat()..heightBounds.last.toFloat(),
+                        onValueChange = { keyboardHeight = it },
+                        onValueChangeFinished = { SettingsPreferences.setKeyboardHeightDp(context, keyboardHeight.toInt(), isLandscape) },
+                    )
+
+                    val bottomPref = SettingsPreferences.getKeyboardBottomPaddingDp(context)
+                        .coerceIn(0, KeyboardResizeBounds.MAX_BOTTOM_PADDING_DP)
+                    var bottomPadding by remember { mutableStateOf(bottomPref.toFloat()) }
+                    DimensionSlider(
+                        title = "键盘底部留白",
+                        value = bottomPadding,
+                        valueLabel = "${bottomPadding.toInt()} dp",
+                        range = 0f..KeyboardResizeBounds.MAX_BOTTOM_PADDING_DP.toFloat(),
+                        onValueChange = { bottomPadding = it },
+                        onValueChangeFinished = { SettingsPreferences.setKeyboardBottomPaddingDp(context, bottomPadding.toInt()) },
+                    )
+
+                    val startPref = SettingsPreferences.getKeyboardMarginStartDp(context).coerceIn(0, marginMax)
+                    var marginStart by remember(configuration.screenWidthDp) { mutableStateOf(startPref.toFloat()) }
+                    if (marginMax > 0) {
+                        DimensionSlider(
+                            title = "键盘左侧边距",
+                            value = marginStart,
+                            valueLabel = "${marginStart.toInt()} dp",
+                            range = 0f..marginMax.toFloat(),
+                            onValueChange = { marginStart = it },
+                            onValueChangeFinished = { SettingsPreferences.setKeyboardMarginStartDp(context, marginStart.toInt()) },
+                        )
+                    }
+
+                    val endPref = SettingsPreferences.getKeyboardMarginEndDp(context).coerceIn(0, marginMax)
+                    var marginEnd by remember(configuration.screenWidthDp) { mutableStateOf(endPref.toFloat()) }
+                    if (marginMax > 0) {
+                        DimensionSlider(
+                        title = "键盘右侧边距",
+                            value = marginEnd,
+                            valueLabel = "${marginEnd.toInt()} dp",
+                            range = 0f..marginMax.toFloat(),
+                            onValueChange = { marginEnd = it },
+                            onValueChangeFinished = { SettingsPreferences.setKeyboardMarginEndDp(context, marginEnd.toInt()) },
+                        )
+                    }
+                    Text(
+                        "这些尺寸会保存到键盘偏好；键盘调节层可继续直接拖动到系统导航区域。",
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                })
+            }
+
+            item {
+                SettingsSection(title = "键盘布局", content = {
                     var hardwareKeyboardDetectionEnabled by remember {
                         mutableStateOf(SettingsPreferences.isHardwareKeyboardDetectionEnabled(context))
                     }
@@ -92,10 +168,10 @@ fun LayoutDisplaySettingsContent(
                         }
                         Switch(
                             checked = hardwareKeyboardDetectionEnabled,
-                            onCheckedChange = { enabled ->
+                            onCheckedChange = hapticToggle(Switch@ { enabled ->
                                 hardwareKeyboardDetectionEnabled = enabled
                                 SettingsPreferences.setHardwareKeyboardDetectionEnabled(context, enabled)
-                            }
+                            })
                         )
                     }
 
@@ -122,10 +198,10 @@ fun LayoutDisplaySettingsContent(
                         }
                         Switch(
                             checked = landscapeSplitKeyboardEnabled,
-                            onCheckedChange = { enabled ->
+                            onCheckedChange = hapticToggle(Switch@ { enabled ->
                                 landscapeSplitKeyboardEnabled = enabled
                                 SettingsPreferences.setLandscapeSplitKeyboardEnabled(context, enabled)
-                            }
+                            })
                         )
                     }
 
@@ -181,7 +257,57 @@ fun LayoutDisplaySettingsContent(
             }
 
             item {
-                SettingsSection(title = tr(R.string.s_houxuanci), content = {
+                SettingsSection(title = "键盘输入", content = {
+                    var numberLayout by remember { mutableStateOf(SettingsPreferences.getNumberKeyboardLayout(context)) }
+                    Text("数字键盘布局", Modifier.padding(start = 16.dp, top = 16.dp), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("full" to "全键盘数字", "keypad" to "九宫格数字").forEach { (value, label) ->
+                            FilterChip(selected = numberLayout == value, onClick = hapticAction {
+                                numberLayout = value
+                                SettingsPreferences.setNumberKeyboardLayout(context, value)
+                            }, label = { Text(label) })
+                        }
+                    }
+
+                    var swipeMode by remember { mutableStateOf(SettingsPreferences.getSwipeInputMode(context)) }
+                    Text("上滑输入", Modifier.padding(start = 16.dp, top = 8.dp), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf("off" to "关闭", "numbers_only" to "仅数字", "numbers_symbols" to "数字和符号").forEach { (value, label) ->
+                            FilterChip(selected = swipeMode == value, onClick = hapticAction {
+                                swipeMode = value
+                                SettingsPreferences.setSwipeInputMode(context, value)
+                            }, label = { Text(label) })
+                        }
+                    }
+
+                    var emojiEnabled by remember { mutableStateOf(SettingsPreferences.isEmojiKeyEnabled(context)) }
+                    Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("显示表情键", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                            Text("隐藏键盘布局中的表情入口", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = emojiEnabled, onCheckedChange = hapticToggle { enabled ->
+                            emojiEnabled = enabled
+                            SettingsPreferences.setEmojiKeyEnabled(context, enabled)
+                        })
+                    }
+
+                    var keyBubbleEnabled by remember { mutableStateOf(SettingsPreferences.isKeyBubbleEnabled(context)) }
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Column(Modifier.weight(1f)) {
+                            Text("全键盘按键气泡", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                            Text("关闭后，按下字母键时不显示放大提示", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                        Switch(checked = keyBubbleEnabled, onCheckedChange = hapticToggle { enabled ->
+                            keyBubbleEnabled = enabled
+                            SettingsPreferences.setKeyBubbleEnabled(context, enabled)
+                        })
+                    }
+                })
+            }
+
+            item {
+                SettingsSection(title = "候选词", content = {
                     val candidateTextSizePref = SettingsPreferences.getCandidateTextSize(context)
                     var candidateTextSize by remember(candidateTextSizePref) {
                         mutableStateOf(candidateTextSizePref.toFloat())
@@ -201,7 +327,7 @@ fun LayoutDisplaySettingsContent(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        Slider(
+                        HapticStepSlider(
                             value = candidateTextSize,
                             onValueChange = { candidateTextSize = it },
                             onValueChangeFinished = {
@@ -352,7 +478,7 @@ fun LayoutDisplaySettingsContent(
                             )
                         }
                         Spacer(modifier = Modifier.height(8.dp))
-                        Slider(
+                        HapticStepSlider(
                             value = pageSizeSlider,
                             onValueChange = { pageSizeSlider = it },
                             onValueChangeFinished = {
@@ -397,14 +523,40 @@ fun LayoutDisplaySettingsContent(
                         }
                         Switch(
                             checked = autoNumberKeyboard,
-                            onCheckedChange = { newValue ->
+                            onCheckedChange = hapticToggle(Switch@ { newValue ->
                                 autoNumberKeyboard = newValue
                                 SettingsPreferences.setAutoNumberKeyboardEnabled(context, newValue)
-                            }
+                            })
                         )
                     }
                 })
             }
+        }
+    }
+}
+
+@Composable
+private fun DimensionSlider(
+    title: String,
+    value: Float,
+    valueLabel: String,
+    range: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+            Text(valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+        }
+        if (range.endInclusive > range.start) {
+            HapticStepSlider(
+                value = value,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                valueRange = range,
+                steps = (((range.endInclusive - range.start) / 8f).toInt() - 1).coerceAtLeast(0),
+            )
         }
     }
 }

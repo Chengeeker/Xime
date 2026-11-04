@@ -96,6 +96,15 @@ class BackupManagerTest {
         assertTrue(result.isFailure)
     }
 
+    @Test
+    fun `restore rejects windows absolute paths on every host`() {
+        listOf("C:/evil.yaml", "C:\\evil.yaml").forEachIndexed { index, path ->
+            val filesDir = tempDir.newFolder("windows-path-$index")
+            val result = restore(filesDir, zipOfText(mapOf(path to "boom")))
+            assertTrue("Accepted absolute archive path: $path", result.isFailure)
+        }
+    }
+
     // ---- META 元数据条目 ----
 
     @Test

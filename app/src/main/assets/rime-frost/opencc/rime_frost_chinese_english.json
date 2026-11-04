@@ -1,0 +1,27 @@
+{
+	"name": "Chinese to English",
+	"segmentation": {
+		"type": "mmseg",
+		"dict": {
+			"type": "text",
+			"file": "rime_frost_chinese_english.txt"
+		}
+	},
+	"conversion_chain": [
+		{
+			"dict": {
+				"type": "group",
+				"dicts": [
+					{
+						"type": "text",
+						"file": "rime_frost_chinese_english.txt"
+					},
+					{
+						"type": "text",
+						"file": "rime_frost_english_chinese.txt"
+					}
+				]
+			}
+		}
+	]
+}

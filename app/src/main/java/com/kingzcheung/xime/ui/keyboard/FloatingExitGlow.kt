@@ -1,11 +1,5 @@
 package com.kingzcheung.xime.ui.keyboard
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,16 +33,6 @@ fun FloatingExitGlow(
     glowColor: Color,
     modifier: Modifier = Modifier,
 ) {
-    val transition = rememberInfiniteTransition(label = "floatingExitGlow")
-    val pulse by transition.animateFloat(
-        initialValue = 0.55f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 650, easing = FastOutSlowInEasing),
-            RepeatMode.Reverse,
-        ),
-        label = "glowPulse",
-    )
     Box(
         modifier = modifier
             .width(cardWidthDp.dp + SIDE_FLARE_DP.dp * 2)
@@ -57,8 +41,8 @@ fun FloatingExitGlow(
                 drawRect(
                     Brush.radialGradient(
                         colors = listOf(
-                            glowColor.copy(alpha = 0.50f * pulse),
-                            glowColor.copy(alpha = 0.20f * pulse),
+                            glowColor.copy(alpha = 0.50f),
+                            glowColor.copy(alpha = 0.20f),
                             glowColor.copy(alpha = 0f),
                         ),
                         center = Offset(x = size.width / 2f, y = size.height),
@@ -72,7 +56,7 @@ fun FloatingExitGlow(
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(3.dp)
-                .background(glowColor.copy(alpha = 0.85f * pulse))
+                .background(glowColor.copy(alpha = 0.85f))
         )
     }
 }

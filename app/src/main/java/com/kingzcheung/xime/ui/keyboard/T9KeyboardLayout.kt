@@ -109,7 +109,7 @@ fun T9KeyboardLayout(
     /** 左栏选中拼音胶囊背景色；Unspecified 时按 accentColor 20% 透明派生。 */
     selectedCandidateBgColor: Color = Color.Unspecified,
     keyboardBackgroundColor: Color = Color.Transparent,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     keyCornerRadius: Dp = 8.dp,
@@ -921,7 +921,7 @@ private fun T9DigitKey(
     textColor: Color,
     modifier: Modifier = Modifier,
     onPress: (() -> Unit)? = null,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     fontSize: androidx.compose.ui.unit.TextUnit = 16.sp,
@@ -1039,7 +1039,7 @@ private fun NineKeyButton(
     textColor: Color,
     modifier: Modifier = Modifier,
     onPress: (() -> Unit)? = null,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     fontSize: androidx.compose.ui.unit.TextUnit = androidx.compose.ui.unit.TextUnit.Unspecified,
@@ -1079,7 +1079,7 @@ private fun ResetKey(
     backgroundColor: Color,
     textColor: Color,
     modifier: Modifier = Modifier,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     compactMode: Boolean = false,
@@ -1154,7 +1154,7 @@ private fun T9SpaceKey(
     backgroundColor: Color,
     textColor: Color,
     modifier: Modifier = Modifier,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     /** 上滑动作（keyboard.t9.keys.space.swipe_up，无配置为 null 不响应滑动）。 */
@@ -1260,7 +1260,7 @@ private fun T9SpaceKey(
             )
         } else {
             Text(
-                text = schemaName,
+                text = compactInputModeLabel(schemaName),
                 color = textColor,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Normal,

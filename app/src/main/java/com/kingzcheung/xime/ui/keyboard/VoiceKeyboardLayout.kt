@@ -1,11 +1,10 @@
 package com.kingzcheung.xime.ui.keyboard
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
-
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -290,13 +289,6 @@ fun AudioSpectrumAnimation(
             }
         }
     }
-    val animatedValues = barTargets.mapIndexed { index, target ->
-        animateFloatAsState(
-            targetValue = target,
-            animationSpec = tween(durationMillis = 120),
-            label = "spectrumBar$index"
-        )
-    }
 
     val colors = listOf(
         Color(0xFFFF6B6B),
@@ -316,7 +308,7 @@ fun AudioSpectrumAnimation(
         val maxHeight = size.height
 
         repeat(barCount) { index ->
-            val barHeight = maxHeight * animatedValues[index].value.coerceIn(0.05f, 0.98f) * heightScale
+            val barHeight = maxHeight * barTargets[index].coerceIn(0.05f, 0.98f) * heightScale
 
             val totalWidth = barCount * barWidth + (barCount - 1) * spacing
             val startX = (size.width - totalWidth) / 2f

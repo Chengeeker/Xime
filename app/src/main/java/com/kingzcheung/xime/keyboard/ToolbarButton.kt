@@ -17,6 +17,7 @@ import androidx.compose.material.icons.twotone.Paid
 import androidx.compose.material.icons.twotone.Quickreply
 import androidx.compose.material.icons.twotone.SelectAll
 import androidx.compose.material.icons.twotone.Tune
+import androidx.compose.material.icons.twotone.VpnKey
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.Create
 import androidx.compose.material.icons.filled.Mic
@@ -41,6 +42,7 @@ enum class ToolbarButton(
     SELECT_ALL("select_all", tr(R.string.s_quanxuan), Icons.TwoTone.SelectAll),
     COPY("copy", tr(R.string.s_fuzhi), Icons.TwoTone.ContentCopy),
     PASTE("paste", tr(R.string.s_zhantie), Icons.TwoTone.ContentPaste),
+    PASSWORDS("passwords", "密码", Icons.TwoTone.VpnKey),
     HOME("home", tr(R.string.s_duanshou), Icons.TwoTone.FirstPage),
     END("end", tr(R.string.s_duanwei), Icons.AutoMirrored.TwoTone.LastPage),
     HANDWRITING_LOOKUP("handwriting_lookup", tr(R.string.s_shouxiezhaozi), Icons.Outlined.Gesture),
@@ -48,7 +50,7 @@ enum class ToolbarButton(
     VOICE("voice", tr(R.string.s_yuyin), Icons.TwoTone.Mic);
 
     companion object {
-        val DEFAULT_VISIBLE = emptySet<ToolbarButton>()
+        val DEFAULT_VISIBLE = setOf(PASSWORDS)
 
         fun fromId(id: String): ToolbarButton? =
             entries.find { it.id == id }

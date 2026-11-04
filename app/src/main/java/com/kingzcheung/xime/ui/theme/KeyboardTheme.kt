@@ -129,8 +129,8 @@ object KeyboardThemes {
      * 用 Compose 状态包装：UI getter 在组合中读取时会建立订阅，缓存重建后
      * 所有已取色的 Composable 自动重组——动态配色随壁纸变化实时刷新依赖此机制。
      */
-    private var themesCache by mutableStateOf(defaultThemes)
-    private var themesMapCache: Map<String, KeyboardColorScheme> = defaultThemes.associateBy { it.id }
+    private var themesCache by mutableStateOf(defaultThemes + GboardStyle.theme)
+    private var themesMapCache: Map<String, KeyboardColorScheme> = (defaultThemes + GboardStyle.theme).associateBy { it.id }
 
     /** 从配置文件加载主题覆盖项。应在 Application.onCreate 中调用。 */
     fun initFromConfig(context: Context) {
@@ -141,15 +141,16 @@ object KeyboardThemes {
     fun reload(context: Context) {
         configOverrides = KeysConfigHelper.loadColorSchemes(context)
         // 1) 对硬编码主题应用配置覆盖
-        val overridden = defaultThemes.map { applyConfigOverrides(context, it) }
+        val overridden = (defaultThemes + GboardStyle.theme).map { applyConfigOverrides(context, it) }
         // 2) 把配置中有但硬编码列表中没有的新主题也加入缓存
         //    （dynamic_color: true 的条目由 DynamicThemes 运行时从壁纸调色板构建）
         val existingIds = overridden.map { it.id }.toSet()
+        // 内置 dynamic 由 Gboard 配色统一生成，避免新旧 ID 重复显示。
         val newThemes = configOverrides
-            .filterKeys { it !in existingIds }
+            .filterKeys { it !in existingIds && GboardStyle.canonicalThemeId(it) != GboardStyle.DYNAMIC_THEME_ID }
             .map { (id, entry) -> buildSchemeFromConfig(context, id, entry) }
             .filterNotNull()
-        themesCache = overridden + newThemes
+        themesCache = overridden + newThemes + listOfNotNull(GboardStyle.dynamicTheme(context))
         themesMapCache = themesCache.associateBy { it.id }
     }
 
@@ -169,7 +170,8 @@ object KeyboardThemes {
         var rebuilt = false
         val refreshed = themesCache.map { scheme ->
             if (scheme.isDynamic) {
-                DynamicThemes.create(context, scheme.id, scheme.name)?.also { rebuilt = true } ?: scheme
+                (if (scheme.id == GboardStyle.DYNAMIC_THEME_ID) GboardStyle.dynamicTheme(context)
+                else DynamicThemes.create(context, scheme.id, scheme.name))?.also { rebuilt = true } ?: scheme
             } else {
                 scheme
             }
@@ -454,7 +456,7 @@ object KeyboardThemes {
     fun getThemeById(id: String): KeyboardColorScheme {
         // 先读一次状态化缓存建立 Compose 订阅，动态配色重建后 UI 自动重组
         val cache = themesCache
-        return themesMapCache[id] ?: cache[0]
+        return themesMapCache[GboardStyle.canonicalThemeId(id)] ?: cache[0]
     }
 
     fun getSpecialKeyColor(themeId: String, isDark: Boolean): Color {
@@ -545,11 +547,11 @@ object KeyboardThemes {
         return if (isDark) theme.dividerColorDark else theme.dividerColorLight
     }
 
-    /** 动态配色主题不走 color_schemes 静态覆盖，直接从主题缓存取色；其他主题返回 null 走原逻辑。 */
+    /** 动态与 Gboard 内置主题直接从缓存取色；其他主题沿用静态配置覆盖。 */
     private inline fun dynamicThemeColor(themeId: String, selector: (KeyboardColorScheme) -> Color): Color? {
         // 从状态化缓存查找以建立 Compose 订阅：缓存整体替换后 UI 自动重组
-        val theme = themesCache.firstOrNull { it.id == themeId } ?: return null
-        if (!theme.isDynamic) return null
+        val theme = themesCache.firstOrNull { it.id == GboardStyle.canonicalThemeId(themeId) } ?: return null
+        if (!theme.isDynamic && !GboardStyle.matches(themeId)) return null
         return selector(theme)
     }
 

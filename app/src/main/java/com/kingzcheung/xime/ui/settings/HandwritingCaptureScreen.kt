@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticTapFeedback
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.content.ContentValues
 import android.content.Intent
@@ -279,8 +281,8 @@ fun HandwritingCaptureScreen(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(tr(R.string.s_shouxieshujucaiji)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -293,24 +295,24 @@ fun HandwritingCaptureScreen(onBack: () -> Unit) {
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 4.dp),
                     )
-                    IconButton(onClick = { menuExpanded = true }) {
-                        Icon(Icons.Filled.MoreVert, contentDescription = tr(R.string.s_gengduo))
+                    IconButton(onClick = hapticAction(IconButton@ { menuExpanded = true })) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "更多")
                     }
                     DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                         DropdownMenuItem(
                             text = { Text(tr(R.string.s_fenxiang_json)) },
                             leadingIcon = { Icon(Icons.Filled.IosShare, contentDescription = null) },
-                            onClick = { menuExpanded = false; viewModel.exportShare() },
+                            onClick = hapticAction(DropdownMenuItem@ { menuExpanded = false; viewModel.exportShare() }),
                         )
                         DropdownMenuItem(
                             text = { Text(tr(R.string.s_baocundaoxiazai)) },
                             leadingIcon = { Icon(Icons.Filled.SaveAlt, contentDescription = null) },
-                            onClick = { menuExpanded = false; viewModel.exportToDownloads() },
+                            onClick = hapticAction(DropdownMenuItem@ { menuExpanded = false; viewModel.exportToDownloads() }),
                         )
                         DropdownMenuItem(
                             text = { Text(tr(R.string.s_qingkongyangben)) },
                             leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                            onClick = { menuExpanded = false; viewModel.clearAll() },
+                            onClick = hapticAction(DropdownMenuItem@ { menuExpanded = false; viewModel.clearAll() }),
                         )
                     }
                 },
@@ -326,9 +328,9 @@ fun HandwritingCaptureScreen(onBack: () -> Unit) {
             OutlinedTextField(
                 value = sourceText,
                 onValueChange = { sourceText = it },
-                modifier = Modifier.fillMaxWidth(),
-                label = { Text(tr(R.string.s_zhantieyaocaijidewenben)) },
-                placeholder = { Text(tr(R.string.s_zhantieyiduanhua_zhuzicaijibiji)) },
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback(),
+                label = { Text("粘贴要采集的文本") },
+                placeholder = { Text("粘贴一段话，逐字采集笔迹") },
                 singleLine = false,
                 maxLines = 2,
                 textStyle = MaterialTheme.typography.bodyMedium,
@@ -555,18 +557,18 @@ private fun HandwritingCaptureEditor(
 
         Row {
             OutlinedButton(
-                onClick = {
+                onClick = hapticAction(OutlinedButton@ {
                     strokes.clear()
                     currentStroke = emptyList()
                     candidates = emptyList()
-                },
+                }),
                 enabled = strokes.isNotEmpty(),
             ) {
                 Text(tr(R.string.s_zhongxie))
             }
             Spacer(Modifier.width(12.dp))
             Button(
-                onClick = {
+                onClick = hapticAction(Button@ {
                     val w = canvasSizePx.first.toFloat()
                     val h = canvasSizePx.second.toFloat()
                     val t0 = strokes.firstOrNull()?.firstOrNull()?.timeMs ?: 0L
@@ -583,7 +585,7 @@ private fun HandwritingCaptureEditor(
                             modelTopScore = top?.score,
                         ),
                     )
-                },
+                }),
                 enabled = strokes.isNotEmpty(),
                 modifier = Modifier.weight(1f),
             ) {
@@ -591,8 +593,8 @@ private fun HandwritingCaptureEditor(
             }
             if (existingCount > 0) {
                 Spacer(Modifier.width(12.dp))
-                TextButton(onClick = onDelete) {
-                    Text(tr(R.string.s_shanchugaiziyangben), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = hapticAction(onDelete)) {
+                    Text("删除该字样本", color = MaterialTheme.colorScheme.error)
                 }
             }
         }

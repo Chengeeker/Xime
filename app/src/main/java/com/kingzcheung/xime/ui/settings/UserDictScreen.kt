@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticTapFeedback
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -106,8 +108,8 @@ fun UserDictContent(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(tr(R.string.s_yonghuciku)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
@@ -118,23 +120,23 @@ fun UserDictContent(onBack: () -> Unit) {
                         )
                     } else if (selectedDict != null) {
                         Box {
-                            IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = tr(R.string.s_gengduocaozuo))
+                            IconButton(onClick = hapticAction(IconButton@ { showMenu = true })) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "更多操作")
                             }
                             DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
                                 DropdownMenuItem(
-                                    text = { Text(tr(R.string.s_daochuwenbenmabiao)) },
-                                    onClick = {
+                                    text = { Text("导出文本码表") },
+                                    onClick = hapticAction(DropdownMenuItem@ {
                                         showMenu = false
                                         exportLauncher.launch(UserDictIoManager.exportFileName(selectedDict))
-                                    }
+                                    })
                                 )
                                 DropdownMenuItem(
-                                    text = { Text(tr(R.string.s_daoruwenbenmabiao)) },
-                                    onClick = {
+                                    text = { Text("导入文本码表") },
+                                    onClick = hapticAction(DropdownMenuItem@ {
                                         showMenu = false
                                         importLauncher.launch(arrayOf("*/*"))
-                                    }
+                                    })
                                 )
                             }
                         }
@@ -149,7 +151,7 @@ fun UserDictContent(onBack: () -> Unit) {
         floatingActionButton = {
             if (selectedDict != null) {
                 FloatingActionButton(
-                    onClick = { showAddSheet = true },
+                    onClick = hapticAction(FloatingActionButton@ { showAddSheet = true }),
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
                     Icon(
@@ -185,10 +187,10 @@ fun UserDictContent(onBack: () -> Unit) {
                         for (dict in uiState.dicts) {
                             DropdownMenuItem(
                                 text = { Text(dict.name) },
-                                onClick = {
+                                onClick = hapticAction(DropdownMenuItem@ {
                                     dismiss()
                                     viewModel.selectDict(dict.name)
-                                }
+                                })
                             )
                         }
                     }
@@ -323,14 +325,14 @@ private fun UserDictAddSheet(
             )
             OutlinedTextField(
                 value = word, onValueChange = { word = it },
-                label = { Text(tr(R.string.s_ci)) }, shape = RoundedCornerShape(12.dp), singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("词") }, shape = RoundedCornerShape(12.dp), singleLine = true,
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = code, onValueChange = { code = it },
-                label = { Text(tr(R.string.s_bianma)) }, shape = RoundedCornerShape(12.dp), singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("编码") }, shape = RoundedCornerShape(12.dp), singleLine = true,
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
@@ -343,11 +345,11 @@ private fun UserDictAddSheet(
                 } else {
                     null
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(onDismiss)) { Text("取消") }
                 Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     modifier = Modifier.clickable(enabled = check is UserDictIoManager.EntryInputCheck.Ok) {
@@ -384,12 +386,12 @@ private fun DeleteEntryDialog(entry: DictEntry, onConfirm: () -> Unit, onDismiss
             )
         },
         confirmButton = {
-            TextButton(onClick = onConfirm) {
-                Text(tr(R.string.s_shanchu), color = MaterialTheme.colorScheme.error)
+            TextButton(onClick = hapticAction(onConfirm)) {
+                Text("删除", color = MaterialTheme.colorScheme.error)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(tr(R.string.s_quxiao)) }
+            TextButton(onClick = hapticAction(onDismiss)) { Text("取消") }
         }
     )
 }
@@ -424,7 +426,7 @@ private fun UserDictEntryRow(entry: DictEntry, onDelete: () -> Unit) {
                     )
                 }
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = hapticAction(onDelete), modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Delete, contentDescription = tr(R.string.s_shanchu),
                     tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)
@@ -459,7 +461,7 @@ private fun TransferMessageBanner(
                 color = onContainer,
                 modifier = Modifier.weight(1f).padding(vertical = 12.dp)
             )
-            IconButton(onClick = onDismiss) {
+            IconButton(onClick = hapticAction(onDismiss)) {
                 Icon(
                     Icons.Default.Clear, contentDescription = tr(R.string.s_guanbitishi),
                     modifier = Modifier.size(18.dp),

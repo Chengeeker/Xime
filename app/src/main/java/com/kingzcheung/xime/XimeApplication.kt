@@ -155,6 +155,9 @@ class XimeApplication : Application(), ImageLoaderFactory {
         ModelRuntime.attach(this)
 
         preInitializeRimeEngine()
+        if (Application.getProcessName() == packageName) {
+            com.kingzcheung.xime.settings.DictionaryCloudUpdates.schedule(this)
+        }
     }
     
     private fun preInitializeRimeEngine() {
@@ -172,6 +175,7 @@ class XimeApplication : Application(), ImageLoaderFactory {
                 // 内部自动升级为 fullCheck 维护。与输入法服务共享 deploymentLock，
                 // 不会重复触发编译。
                 RimeConfigHelper.ensureDeployment(this@XimeApplication)
+                com.kingzcheung.xime.settings.DictionaryPackManager.applyPending(this@XimeApplication)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to pre-initialize Rime engine", e)
             }

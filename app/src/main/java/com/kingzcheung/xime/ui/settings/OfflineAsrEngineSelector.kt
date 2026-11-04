@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -59,7 +60,7 @@ internal fun OfflineAsrEngineSelector(
             }
             Switch(
                 checked = useLocal,
-                onCheckedChange = onUseLocalChange,
+                onCheckedChange = hapticToggle(onUseLocalChange),
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                     checkedTrackColor = MaterialTheme.colorScheme.primaryContainer

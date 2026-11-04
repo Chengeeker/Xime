@@ -118,6 +118,7 @@ fun KeyboardView(
      */
     onHapticFeedback: (() -> Unit)? = null,
 ) {
+    val keyboardContext = LocalContext.current
     val isShifted by viewModel.isShifted.collectAsStateWithLifecycle()
     val keyboardState by viewModel.keyboardState.collectAsStateWithLifecycle()
     val page by viewModel.page.collectAsStateWithLifecycle()
@@ -469,6 +470,7 @@ fun KeyboardView(
                             ToolbarButton.SWITCHES -> ({ viewModel.showOverlay(OverlayRoute.SchemaSwitches) })
                             ToolbarButton.QUICK_PHRASE -> ({ viewModel.showOverlay(OverlayRoute.Clipboard(1)) })
                             ToolbarButton.SYMBOL -> ({ viewModel.showOverlay(OverlayRoute.Symbol) })
+                            ToolbarButton.PASSWORDS -> ({ viewModel.showOverlay(OverlayRoute.Passwords) })
                             ToolbarButton.SELECT_ALL -> ({ callbacks.onToolbarEditingAction?.invoke("select_all") })
                             ToolbarButton.COPY -> ({ callbacks.onToolbarEditingAction?.invoke("copy") })
                             ToolbarButton.PASTE -> ({ callbacks.onToolbarEditingAction?.invoke("paste") })
@@ -1371,14 +1373,12 @@ fun KeyboardView(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             TextButton(onClick = {
-                                onHapticFeedback?.invoke()
                                 deletePending = null
                             }) {
                                 Text(tr(R.string.s_quxiao), color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             Spacer(Modifier.width(4.dp))
                             TextButton(onClick = {
-                                onHapticFeedback?.invoke()
                                 deletePending = null
                                 pending.onConfirm()
                             }) {
@@ -1415,18 +1415,18 @@ fun KeyboardView(
                             canFloatKeyboard = !state.isHostConstrained,
                         ),
                         callbacks = MenuBarCallbacks(
-                            onDismiss = { onHapticFeedback?.invoke(); viewModel.closeOverlay() },
-                            onClipboard = { onHapticFeedback?.invoke(); viewModel.showOverlay(OverlayRoute.Clipboard(0)); callbacks.onClipboard?.invoke() },
-                            onQuickSend = { onHapticFeedback?.invoke(); viewModel.showOverlay(OverlayRoute.Clipboard(1)); callbacks.onQuickSend?.invoke() },
-                            onKeyboardResize = { onHapticFeedback?.invoke(); callbacks.onKeyboardResize?.invoke(); viewModel.closeOverlay() },
-                            onEmoji = { onHapticFeedback?.invoke(); viewModel.showOverlay(OverlayRoute.Emoji) },
-                            onReloadConfig = { onHapticFeedback?.invoke(); callbacks.onReloadConfig?.invoke(); viewModel.closeOverlay() },
-                            onSettings = { onHapticFeedback?.invoke(); callbacks.onSettings?.invoke(); viewModel.closeOverlay() },
-                            onSchemaList = { onHapticFeedback?.invoke(); viewModel.pushOverlay(OverlayRoute.SchemaList) },
-                            onSchemaSwitches = { onHapticFeedback?.invoke(); viewModel.pushOverlay(OverlayRoute.SchemaSwitches) },
-                            onToggleDarkMode = { onHapticFeedback?.invoke(); callbacks.onToggleDarkMode?.invoke() },
-                            onToolbarCustomize = { onHapticFeedback?.invoke(); viewModel.showOverlay(OverlayRoute.ToolbarCustomize) },
-                            onFloatingModeToggle = { onHapticFeedback?.invoke(); callbacks.onFloatingModeChange?.invoke(!state.isFloatingMode); viewModel.closeOverlay() },
+                            onDismiss = { viewModel.closeOverlay() },
+                            onClipboard = { viewModel.showOverlay(OverlayRoute.Clipboard(0)); callbacks.onClipboard?.invoke() },
+                            onQuickSend = { viewModel.showOverlay(OverlayRoute.Clipboard(1)); callbacks.onQuickSend?.invoke() },
+                            onKeyboardResize = { callbacks.onKeyboardResize?.invoke(); viewModel.closeOverlay() },
+                            onEmoji = { viewModel.showOverlay(OverlayRoute.Emoji) },
+                            onReloadConfig = { callbacks.onReloadConfig?.invoke(); viewModel.closeOverlay() },
+                            onSettings = { callbacks.onSettings?.invoke(); viewModel.closeOverlay() },
+                            onSchemaList = { viewModel.pushOverlay(OverlayRoute.SchemaList) },
+                            onSchemaSwitches = { viewModel.pushOverlay(OverlayRoute.SchemaSwitches) },
+                            onToggleDarkMode = { callbacks.onToggleDarkMode?.invoke() },
+                            onToolbarCustomize = { viewModel.showOverlay(OverlayRoute.ToolbarCustomize) },
+                            onFloatingModeToggle = { callbacks.onFloatingModeChange?.invoke(!state.isFloatingMode); viewModel.closeOverlay() },
                         ),
                         modifier = Modifier.fillMaxWidth().fillMaxHeight()
                     )
@@ -1435,7 +1435,7 @@ fun KeyboardView(
                         backgroundColor = keyboardBgColor,
                         keyTextColor = keyTextColor,
                         keyBgColor = keyBgColor,
-                        onToggleSwitch = { sw -> onHapticFeedback?.invoke(); callbacks.onToggleSchemaSwitch?.invoke(sw) },
+                        onToggleSwitch = { sw -> callbacks.onToggleSchemaSwitch?.invoke(sw) },
                         onBack = { viewModel.closeOverlay() },
                         modifier = Modifier.fillMaxWidth().fillMaxHeight()
                     )
@@ -1529,10 +1529,29 @@ fun KeyboardView(
                             modifier = Modifier.fillMaxWidth().fillMaxHeight()
                         )
                     }
+                    is OverlayRoute.Passwords -> PasswordManagerPanel(
+                        suggestions = inlineSuggestions,
+                        backgroundColor = keyboardBgColor,
+                        textColor = keyTextColor,
+                        onOpenProviderSettings = {
+                            val action = if (android.os.Build.VERSION.SDK_INT >= 35) {
+                                android.provider.Settings.ACTION_CREDENTIAL_PROVIDER
+                            } else {
+                                android.provider.Settings.ACTION_REQUEST_SET_AUTOFILL_SERVICE
+                            }
+                            runCatching {
+                                keyboardContext.startActivity(
+                                    android.content.Intent(action)
+                                        .setData(android.net.Uri.parse("package:${keyboardContext.packageName}"))
+                                        .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK),
+                                )
+                            }
+                        },
+                    )
                     is OverlayRoute.Emoji -> EmojiKeyboardLayout(
                         onEmojiSelect = { emoji ->
-                            onHapticFeedback?.invoke()
                             if (emoji == "delete") {
+                                onHapticFeedback?.invoke()
                                 callbacks.onKeyPress("delete", false)
                             } else {
                                 callbacks.onCommitText?.invoke(emoji)
@@ -1545,12 +1564,11 @@ fun KeyboardView(
                         accentColor = accentColor,
                         bottomPaddingDp = state.keyboardBottomPaddingDp,
                         modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                        onHapticFeedback = onHapticFeedback,
                     )
                     is OverlayRoute.Symbol -> SymbolKeyboardLayout(
                         onSelect = { symbol ->
-                            onHapticFeedback?.invoke()
                             if (symbol == "delete") {
+                                onHapticFeedback?.invoke()
                                 callbacks.onKeyPress("delete", false)
                             } else {
                                 callbacks.onCommitText?.invoke(symbol)
@@ -1565,7 +1583,6 @@ fun KeyboardView(
                         specialKeyTextColor = specialKeyTextColor,
                         bottomPaddingDp = state.keyboardBottomPaddingDp,
                         modifier = Modifier.fillMaxWidth().fillMaxHeight(),
-                        onHapticFeedback = onHapticFeedback,
                     )
                     is OverlayRoute.SplitWords -> SplitWordsView(
                         text = p.route.text,

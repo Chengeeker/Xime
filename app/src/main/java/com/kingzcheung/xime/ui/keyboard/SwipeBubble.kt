@@ -23,6 +23,8 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.xime.keyboard.KeyboardDimensions
+import com.kingzcheung.xime.ui.theme.GboardStyle
+import com.kingzcheung.xime.ui.theme.LocalGboardStyle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -148,7 +150,8 @@ fun rememberSwipeBubbleDrawData(
     // 全部基于真实按键 bounds 计算，不再用 KeyHeight 估算值——
     // 键盘高度被调大时估算失准，宽体会下沉进按键被手指挡住。
     val pointerHeightPx = keyBounds.height
-    val cornerRadiusPx = with(density) { BubbleCornerRadius.toPx() } * bubbleScale
+    val gboardStyle = LocalGboardStyle.current
+    val cornerRadiusPx = with(density) { (if (gboardStyle) GboardStyle.PopupRadius else BubbleCornerRadius).toPx() } * bubbleScale
     val screenMarginPx = with(density) { BubbleScreenMargin.toPx() }
     val keyWidthPx = keyWidth
     val minBodyWidthPx = keyWidthPx * 1.8f

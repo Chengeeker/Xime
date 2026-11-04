@@ -105,11 +105,8 @@ internal class ImeSessionController(private val service: XimeInputMethodService)
             isComposing = display.isComposing
             t9CandidateActions = mergedActions
         } else {
-            // 非 T9 方案：preeditText 用引擎回显（带音节分隔符，如全拼 ni'hao）供候选栏展示；
-            // inputText 保留原始键入串（无分隔）——空格/切模式等提交路径会把它直接上屏，
-            // 不能混入回显字符。历史上曾整体用 input 规避自装双拼插件的展开编码显示，
-            // 代价是全拼丢失分隔符；现仅显示层恢复 librime 标准回显。
-            displayText = if (preeditText.isNotEmpty()) preeditText else inputText
+            // 混输方案展示原始键入码，避免 Flypy 双拼码被引擎展开成拼音（如 ul → shuang）。
+            displayText = displayPreeditText(service.uiState.value.currentSchemaId, preeditText, inputText)
             displayCandidates = filteredTexts
             displayComments = filteredComments
             isComposing = inputText.isNotEmpty()
@@ -229,6 +226,13 @@ internal class ImeSessionController(private val service: XimeInputMethodService)
         return if (disp >= displayText.length) -1 else disp
     }
 
+    private fun displayPreeditText(schemaId: String, preeditText: String, inputText: String): String =
+        if ((schemaId == "rime_frost_double_pinyin_flypy" || schemaId == "rime_frost_mixed_flypy") && inputText.isNotEmpty()) {
+            inputText
+        } else {
+            preeditText.ifEmpty { inputText }
+        }
+
     internal fun updateUIWithResult(
         result: com.kingzcheung.xime.rime.RimeProcessResult,
         pluginActions: List<CandidateAction> = emptyList(),
@@ -277,9 +281,11 @@ internal class ImeSessionController(private val service: XimeInputMethodService)
             displayComments = display.displayComments
             isComposing = display.isComposing
         } else {
-            // 非 T9 方案：preeditText 用引擎回显（带音节分隔符，如全拼 ni'hao），空则回退 input；
-            // inputText 保留原始键入串供提交路径直接上屏（见 applyComposition 注释）。
-            displayText = if (result.preeditText.isNotEmpty()) result.preeditText else result.inputText
+            displayText = displayPreeditText(
+                service.uiState.value.currentSchemaId,
+                result.preeditText,
+                result.inputText,
+            )
             displayCandidates = filteredTexts
             displayComments = filteredComments
             isComposing = result.inputText.isNotEmpty()

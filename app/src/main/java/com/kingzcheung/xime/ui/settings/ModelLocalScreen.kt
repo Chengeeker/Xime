@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -85,16 +86,16 @@ fun ModelLocalContent(
             title = { Text(tr(R.string.s_shanchumoxing)) },
             text = { Text(tr(R.string.s_quedingshanchu_moxingwenjianji_9b0ff, model.model.name)) },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(onClick = hapticAction(TextButton@ {
                     pendingDelete = null
                     viewModel.deleteModel(model.model.id)
-                }) {
-                    Text(tr(R.string.s_shanchu), color = MaterialTheme.colorScheme.error)
+                })) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDelete = null }) {
-                    Text(tr(R.string.s_quxiao))
+                TextButton(onClick = hapticAction(TextButton@ { pendingDelete = null })) {
+                    Text("取消")
                 }
             },
         )
@@ -105,13 +106,13 @@ fun ModelLocalContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_bendimoxing)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
-                    IconButton(onClick = { viewModel.refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = tr(R.string.s_shuaxin))
+                    IconButton(onClick = hapticAction(IconButton@ { viewModel.refresh() })) {
+                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -259,7 +260,7 @@ private fun ModelLocalCard(
                 )
                 Spacer(Modifier.weight(1f))
                 OutlinedButton(
-                    onClick = onDelete,
+                    onClick = hapticAction(onDelete),
                     shape = RoundedCornerShape(50),
                     colors = ButtonDefaults.outlinedButtonColors(
                         contentColor = MaterialTheme.colorScheme.error,

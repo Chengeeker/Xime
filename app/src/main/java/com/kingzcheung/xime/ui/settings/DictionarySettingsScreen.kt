@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -51,6 +52,7 @@ fun DictionaryHubContent(
     onBack: () -> Unit,
     onNavigateToUserDict: () -> Unit,
     onNavigateToCustomPhrase: () -> Unit,
+    onNavigateToPacks: () -> Unit,
 ) {
     val viewModel: DictionaryHubViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -62,8 +64,8 @@ fun DictionaryHubContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_cikuguanli)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -84,9 +86,16 @@ fun DictionaryHubContent(
             SettingsSection(title = tr(R.string.s_cikuneirong), content = {
                 SettingsItem(
                     icon = Icons.TwoTone.Storage,
-                    title = tr(R.string.s_yonghuciku),
-                    subtitle = tr(R.string.s_shurushizidongjileidecitiao) +
-                        (uiState.userDictCount?.let { tr(R.string.s_ben, it) } ?: ""),
+                    title = "智能词库中心",
+                    subtitle = "专题词库导入、启停、卸载与版本恢复",
+                    onClick = onNavigateToPacks,
+                    showArrow = true
+                )
+                SettingsItem(
+                    icon = Icons.TwoTone.Storage,
+                    title = "用户词库",
+                    subtitle = "输入时自动积累的词条" +
+                        (uiState.userDictCount?.let { " · $it 本" } ?: ""),
                     onClick = onNavigateToUserDict,
                     showArrow = true
                 )

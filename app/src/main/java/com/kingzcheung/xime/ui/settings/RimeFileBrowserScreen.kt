@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.graphics.Typeface
 import android.widget.Toast
@@ -158,24 +159,24 @@ fun RimeFileBrowserContent(onBack: () -> Unit) {
                 },
                 navigationIcon = {
                     if (currentDir == rootDir) {
-                        IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                        IconButton(onClick = hapticAction(onBack)) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                         }
                     } else {
-                        IconButton(onClick = { currentDir = currentDir.parentFile ?: rootDir }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_shangjimulu))
+                        IconButton(onClick = hapticAction(IconButton@ { currentDir = currentDir.parentFile ?: rootDir })) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "上级目录")
                         }
                     }
                 },
                 actions = {
-                    IconButton(onClick = { currentDir = rootDir }) {
-                        Icon(Icons.Default.Home, contentDescription = tr(R.string.s_genmulu))
+                    IconButton(onClick = hapticAction(IconButton@ { currentDir = rootDir })) {
+                        Icon(Icons.Default.Home, contentDescription = "根目录")
                     }
-                    IconButton(onClick = { refresh() }) {
-                        Icon(Icons.Default.Refresh, contentDescription = tr(R.string.s_shuaxin))
+                    IconButton(onClick = hapticAction(IconButton@ { refresh() })) {
+                        Icon(Icons.Default.Refresh, contentDescription = "刷新")
                     }
-                    IconButton(onClick = { showExportDialog = true }) {
-                        Icon(Icons.Default.IosShare, contentDescription = tr(R.string.s_daochu))
+                    IconButton(onClick = hapticAction(IconButton@ { showExportDialog = true })) {
+                        Icon(Icons.Default.IosShare, contentDescription = "导出")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -230,13 +231,13 @@ fun RimeFileBrowserContent(onBack: () -> Unit) {
             title = { Text(if (isDir) tr(R.string.s_shanchumulu) else tr(R.string.s_shanchuwenjian)) },
             text = { Text(tr(R.string.s_queding_shanchu, file.name, if (isDir) tr(R.string.s_muluneirong_shanchu) else "")) },
             confirmButton = {
-                TextButton(onClick = { deleteFile(file) }) {
-                    Text(tr(R.string.s_shanchu), color = MaterialTheme.colorScheme.error)
+                TextButton(onClick = hapticAction(TextButton@ { deleteFile(file) })) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = null }) {
-                    Text(tr(R.string.s_quxiao))
+                TextButton(onClick = hapticAction(TextButton@ { showDeleteDialog = null })) {
+                    Text("取消")
                 }
             }
         )
@@ -256,7 +257,7 @@ fun RimeFileBrowserContent(onBack: () -> Unit) {
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
+                    onClick = hapticAction(TextButton@ {
                         showExportDialog = false
                         exportInProgress = true
                         scope.launch {
@@ -279,7 +280,7 @@ fun RimeFileBrowserContent(onBack: () -> Unit) {
                                 }
                             )
                         }
-                    },
+                    }),
                     enabled = !exportInProgress
                 ) {
                     Text(if (exportInProgress) tr(R.string.s_daochuzhong) else tr(R.string.s_kaishidaochu))
@@ -287,7 +288,7 @@ fun RimeFileBrowserContent(onBack: () -> Unit) {
             },
             dismissButton = {
                 TextButton(
-                    onClick = { showExportDialog = false },
+                    onClick = hapticAction(TextButton@ { showExportDialog = false }),
                     enabled = !exportInProgress
                 ) {
                     Text(tr(R.string.s_quxiao))
@@ -342,18 +343,18 @@ private fun YamlEditor(file: File, onDeleted: () -> Unit, onBack: () -> Unit) {
             title = { Text(tr(R.string.s_shanchuwenjian)) },
             text = { Text(tr(R.string.s_quedingshanchu_cicaozuobukechexiao, file.name)) },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(onClick = hapticAction(TextButton@ {
                     showDeleteConfirm = false
                     file.delete()
                     Toast.makeText(context, tr(R.string.s_yishanchu, file.name), Toast.LENGTH_SHORT).show()
                     onDeleted()
-                }) {
-                    Text(tr(R.string.s_shanchu), color = MaterialTheme.colorScheme.error)
+                })) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) {
-                    Text(tr(R.string.s_quxiao))
+                TextButton(onClick = hapticAction(TextButton@ { showDeleteConfirm = false })) {
+                    Text("取消")
                 }
             }
         )
@@ -396,21 +397,21 @@ private fun YamlEditor(file: File, onDeleted: () -> Unit, onBack: () -> Unit) {
                     }
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 actions = {
                     if (isEditing) {
-                        IconButton(onClick = { save() }) {
-                            Icon(Icons.Default.Check, contentDescription = tr(R.string.s_baocun),
+                        IconButton(onClick = hapticAction(IconButton@ { save() })) {
+                            Icon(Icons.Default.Check, contentDescription = "保存",
                                 tint = MaterialTheme.colorScheme.primary)
                         }
                     }
-                    IconButton(onClick = {
+                    IconButton(onClick = hapticAction(IconButton@ {
                         isEditing = !isEditing
                         editor?.editable = isEditing
-                    }) {
+                    })) {
                         Icon(
                             if (isEditing) Icons.Default.Visibility else Icons.Default.Edit,
                             contentDescription = if (isEditing) tr(R.string.s_yulan) else tr(R.string.s_bianji),
@@ -418,7 +419,7 @@ private fun YamlEditor(file: File, onDeleted: () -> Unit, onBack: () -> Unit) {
                                    else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-                    IconButton(onClick = { showDeleteConfirm = true }) {
+                    IconButton(onClick = hapticAction(IconButton@ { showDeleteConfirm = true })) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = tr(R.string.s_shanchu),
@@ -534,14 +535,14 @@ private fun FileEntryRow(entry: FileEntry, onView: () -> Unit, onDelete: () -> U
         trailingContent = {
             if (!entry.isDirectory) {
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    IconButton(onClick = onShare) {
+                    IconButton(onClick = hapticAction(onShare)) {
                         Icon(
                             Icons.Default.Share,
                             contentDescription = tr(R.string.s_fenxiang),
                             tint = MaterialTheme.colorScheme.primary
                         )
                     }
-                    IconButton(onClick = onDelete) {
+                    IconButton(onClick = hapticAction(onDelete)) {
                         Icon(
                             Icons.Default.Delete,
                             contentDescription = tr(R.string.s_shanchu),

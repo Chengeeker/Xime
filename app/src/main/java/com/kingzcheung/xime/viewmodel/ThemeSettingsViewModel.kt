@@ -3,6 +3,7 @@ package com.kingzcheung.xime.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import com.kingzcheung.xime.settings.SettingsPreferences
+import com.kingzcheung.xime.ui.theme.GboardStyle
 import com.kingzcheung.xime.ui.theme.KeyboardColorScheme
 import com.kingzcheung.xime.ui.theme.KeyboardThemes
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,7 +22,7 @@ class ThemeSettingsViewModel(application: Application) : AndroidViewModel(applic
     
     private val _uiState = MutableStateFlow(ThemeUiState(
         darkMode = SettingsPreferences.getDarkMode(context),
-        colorTheme = SettingsPreferences.getKeyboardTheme(context),
+        colorTheme = GboardStyle.canonicalThemeId(SettingsPreferences.getKeyboardTheme(context)),
     ))
     val uiState: StateFlow<ThemeUiState> = _uiState.asStateFlow()
     
@@ -31,7 +32,8 @@ class ThemeSettingsViewModel(application: Application) : AndroidViewModel(applic
     }
     
     fun setColorTheme(themeId: String) {
-        SettingsPreferences.setKeyboardTheme(context, themeId)
-        _uiState.update { it.copy(colorTheme = themeId) }
+        val canonicalThemeId = GboardStyle.canonicalThemeId(themeId)
+        SettingsPreferences.setKeyboardTheme(context, canonicalThemeId)
+        _uiState.update { it.copy(colorTheme = canonicalThemeId) }
     }
 }

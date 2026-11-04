@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticTapFeedback
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -89,8 +91,8 @@ fun CustomPhraseSettingsContent(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(tr(R.string.s_kuaijieduanyu)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -101,7 +103,7 @@ fun CustomPhraseSettingsContent(onBack: () -> Unit) {
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { viewModel.showAddDialog() },
+                onClick = hapticAction(FloatingActionButton@ { viewModel.showAddDialog() }),
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.Add, contentDescription = tr(R.string.s_tianjia), tint = MaterialTheme.colorScheme.onPrimary)
@@ -128,10 +130,10 @@ fun CustomPhraseSettingsContent(onBack: () -> Unit) {
                                 )
                             }
                         },
-                        onClick = {
+                        onClick = hapticAction(DropdownMenuItem@ {
                             dismiss()
                             schemaViewModel.selectSchema(s.schemaId)
-                        }
+                        })
                     )
                 }
             }
@@ -262,10 +264,10 @@ private fun PhraseItem(entry: DictEntry, onEdit: () -> Unit, onDelete: () -> Uni
                     )
                 }
             }
-            IconButton(onClick = onEdit, modifier = Modifier.size(36.dp)) {
-                Icon(Icons.Default.Edit, contentDescription = tr(R.string.s_bianji), modifier = Modifier.size(18.dp))
+            IconButton(onClick = hapticAction(onEdit), modifier = Modifier.size(36.dp)) {
+                Icon(Icons.Default.Edit, contentDescription = "编辑", modifier = Modifier.size(18.dp))
             }
-            IconButton(onClick = onDelete, modifier = Modifier.size(36.dp)) {
+            IconButton(onClick = hapticAction(onDelete), modifier = Modifier.size(36.dp)) {
                 Icon(
                     Icons.Default.Delete, contentDescription = tr(R.string.s_shanchu),
                     tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp)
@@ -300,24 +302,24 @@ private fun PhraseEditDialog(
             )
             OutlinedTextField(
                 value = word, onValueChange = onWordChange,
-                label = { Text(tr(R.string.s_duanyu)) }, shape = RoundedCornerShape(12.dp), singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("短语") }, shape = RoundedCornerShape(12.dp), singleLine = true,
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = code, onValueChange = onCodeChange,
-                label = { Text(tr(R.string.s_bianma)) }, shape = RoundedCornerShape(12.dp), singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("编码") }, shape = RoundedCornerShape(12.dp), singleLine = true,
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = weight, onValueChange = onWeightChange,
-                label = { Text(tr(R.string.s_quanzhong_kexuan_yuedayueyouxian)) }, shape = RoundedCornerShape(12.dp), singleLine = true,
-                modifier = Modifier.fillMaxWidth()
+                label = { Text("权重（可选，越大越优先）") }, shape = RoundedCornerShape(12.dp), singleLine = true,
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback()
             )
             Spacer(modifier = Modifier.height(24.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDismiss) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(onDismiss)) { Text("取消") }
                 Spacer(modifier = Modifier.width(8.dp))
                 Surface(
                     modifier = Modifier.clickable(enabled = word.isNotBlank() && code.isNotBlank(), onClick = onConfirm),

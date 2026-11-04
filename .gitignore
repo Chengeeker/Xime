@@ -35,6 +35,7 @@ app/release
 *.tar.xz
 *.tar.gz
 *.zip
+!app/src/test/resources/dictionary-packs/genshin.zip
 /.agents
 # Association model weights (large files, manually placed)
 app/src/main/assets/association_model
@@ -67,3 +68,7 @@ app/src/main/jni/third_party/
 .env.local
 __pycache__/
 *.pyc
+
+# Local companion repository and visual reference material
+/Xime-Dictionaries/
+/design-reference/

@@ -2,12 +2,17 @@ package com.kingzcheung.xime.ui.theme
 
 import android.content.SharedPreferences
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.LocalRippleConfiguration
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.ui.graphics.toArgb
+import androidx.core.graphics.ColorUtils
+import androidx.compose.material3.Typography
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -15,12 +20,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
-import androidx.core.graphics.ColorUtils
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+
 import com.kingzcheung.xime.settings.KeysConfigHelper
 import com.kingzcheung.xime.settings.SettingsPreferences
 
@@ -128,6 +136,7 @@ private fun generateColorScheme(seed: Color, seedContainer: Color, dark: Boolean
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun XimeTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     themeId: String? = null,
@@ -156,7 +165,7 @@ fun XimeTheme(
         currentThemeId
     }
     val scheme = KeyboardThemes.getThemeById(effectiveThemeId)
-    val colorScheme = if (scheme.isDynamic && DynamicThemes.isSupported()) {
+    val generatedColorScheme = if (scheme.isDynamic && DynamicThemes.isSupported()) {
         // Material You 动态配色：由系统壁纸调色板生成（官方实现），随壁纸自动更新
         if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
     } else {
@@ -164,16 +173,39 @@ fun XimeTheme(
         val container = if (darkTheme) scheme.primaryContainerDark else scheme.primaryContainerLight
         generateColorScheme(seed, container, darkTheme)
     }
+    val colorScheme = if (darkTheme) generatedColorScheme.copy(
+        background = Color(0xFF111215),
+        surface = Color(0xFF111215),
+        surfaceContainerLow = Color(0xFF1B1C20),
+        surfaceContainer = Color(0xFF16171B),
+    ) else generatedColorScheme
 
-    CompositionLocalProvider(
-        LocalDensity provides Density(
-            density = LocalDensity.current.density,
-            fontScale = 1.0f
+    val typography = remember {
+        val baseTypography = Typography()
+        baseTypography.copy(
+        displayLarge = baseTypography.displayLarge.copy(letterSpacing = 0.sp),
+        displayMedium = baseTypography.displayMedium.copy(letterSpacing = 0.sp),
+        displaySmall = baseTypography.displaySmall.copy(letterSpacing = 0.sp),
+        headlineLarge = baseTypography.headlineLarge.copy(letterSpacing = 0.sp),
+        headlineMedium = baseTypography.headlineMedium.copy(letterSpacing = 0.sp),
+        headlineSmall = baseTypography.headlineSmall.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+        titleLarge = baseTypography.titleLarge.copy(fontSize = 18.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.sp),
+        titleMedium = baseTypography.titleMedium.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        titleSmall = baseTypography.titleSmall.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        bodyLarge = baseTypography.bodyLarge.copy(letterSpacing = 0.sp),
+        bodyMedium = baseTypography.bodyMedium.copy(letterSpacing = 0.sp),
+        bodySmall = baseTypography.bodySmall.copy(letterSpacing = 0.sp),
+        labelLarge = baseTypography.labelLarge.copy(fontWeight = FontWeight.SemiBold, letterSpacing = 0.sp),
+        labelMedium = baseTypography.labelMedium.copy(fontWeight = FontWeight.Medium, letterSpacing = 0.sp),
+        labelSmall = baseTypography.labelSmall.copy(letterSpacing = 0.sp),
         )
-    ) {
-        MaterialTheme(
-            colorScheme = colorScheme,
-            content = content
+    }
+    MaterialTheme(colorScheme = colorScheme, typography = typography) {
+        val view = LocalView.current
+        CompositionLocalProvider(
+            LocalIndication provides remember(view) { XimeHapticIndication(view) },
+            LocalRippleConfiguration provides null,
+            content = content,
         )
     }
 }

@@ -65,8 +65,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.xime.ui.keyboard.FloatingCardGeometry
 import com.kingzcheung.xime.ui.keyboard.FloatingExitGlow
-import com.kingzcheung.xime.ui.keyboard.KeyboardResizeOverlay
 import com.kingzcheung.xime.ui.keyboard.KeyboardResizeBounds
+import com.kingzcheung.xime.ui.keyboard.KeyboardResizeOverlay
 import com.kingzcheung.xime.ui.keyboard.KeyboardHostFit
 import com.kingzcheung.xime.ui.keyboard.HardwareKeyboardCandidateBar
 import androidx.core.content.FileProvider
@@ -586,7 +586,8 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         val prefs = SettingsPreferences.getPrefsPublic(this)
         sharedPrefsListener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
             when (key) {
-                "dark_mode", "keyboard_theme", "show_bottom_buttons", "keyboard_height_dp", "keyboard_bottom_padding_dp", "keyboard_flush_bottom" -> {
+                "dark_mode", "keyboard_theme", "show_bottom_buttons", "keyboard_height_dp", "keyboard_height_dp_landscape",
+                "keyboard_bottom_padding_dp", "keyboard_flush_bottom", "keyboard_margin_start_dp", "keyboard_margin_end_dp", "toolbar_buttons" -> {
                     loadDarkModePreference()
                     applyWindowBackground()
                 }
@@ -1690,9 +1691,22 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                             modifier = Modifier
 
                                 .fillMaxWidth()
-                                .height(if (state.showKeyboardResize) (state.resizePreviewHeightDp + state.keyboardBottomPaddingDp).dp else (floatingCardContentHeight + state.keyboardBottomPaddingDp + overlayPanelExtra).dp)
+                                .height(
+                                    KeyboardResizeBounds.contentViewportHeightDp(
+                                        if (state.showKeyboardResize) state.resizePreviewHeightDp else floatingCardContentHeight + overlayPanelExtra,
+                                        state.keyboardBottomPaddingDp,
+                                    ).dp
+                                )
                                 .align(androidx.compose.ui.Alignment.BottomCenter)
-                                .then(if (state.isFloatingMode) Modifier else Modifier.offset(y = (-activeBottomDp).dp))
+                                .then(
+                                    if (state.isFloatingMode) Modifier
+                                    else Modifier.offset(
+                                        y = KeyboardResizeBounds.contentViewportOffsetDp(
+                                            state.keyboardBottomPaddingDp,
+                                            activeBottomDp,
+                                        ).dp
+                                    )
+                                )
                                 .then(
                                     // 手机：键盘内容整体避入左右边衬区（挖孔/横屏导航栏）；平板不避让。
                                     // 宽度调节的左右边距两种设备都生效（边距为 0 时与原行为一致）
@@ -1781,17 +1795,16 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                     clipboardSyncEnabled = state.clipboardSyncEnabled,
                                 )
                             }
-                            // 覆盖页（菜单/剪贴板/表情等）激活时清除内联建议：
-                            // InlineContentView 由独立 surface 支撑，其子 surface 合成在
-                            // 窗口自身内容之上，Compose 覆盖层即使不透明也遮不住，
-                            // 建议会浮在剪贴板/菜单面板上方（表现为候选栏位置内容重叠）。
-                            // 与开始输入时 dismissInlineSuggestions 同语义，均含 surface
-                            // 释放（InlineSuggestionViews.releaseAll）；覆盖页关闭后由
-                            // 宿主 app 重新下发建议。
-                            val isOverlayActive = keyboardViewModel.page
-                                .collectAsState().value is KeyboardPage.Overlay
-                            LaunchedEffect(isOverlayActive) {
-                                if (isOverlayActive) dismissInlineSuggestions()
+                            val currentPage = keyboardViewModel.page.collectAsState().value
+                            val isOverlayActive = currentPage is KeyboardPage.Overlay
+                            val isPasswordPanelActive = currentPage is KeyboardPage.Overlay &&
+                                currentPage.route is com.kingzcheung.xime.keyboard.OverlayRoute.Passwords
+                            val wasPasswordPanelActive = remember { mutableStateOf(false) }
+                            LaunchedEffect(isOverlayActive, isPasswordPanelActive) {
+                                if ((isOverlayActive || wasPasswordPanelActive.value) && !isPasswordPanelActive) {
+                                    dismissInlineSuggestions()
+                                }
+                                wasPasswordPanelActive.value = isPasswordPanelActive
                             }
                             val callbacks = rememberImeKeyboardCallbacks(this@XimeInputMethodService, floatingMinY)
                             keyboardCallbacks = callbacks
@@ -1806,7 +1819,11 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 inlineSuggestions = inlineSuggestionManager?.suggestions.orEmpty(),
                                 // 非按键交互（符号/表情面板、菜单栏、候选栏按钮）的振动，
                                 // 语义与按键按下反馈完全一致（模式/时长/振幅走同一配置）
-                                onHapticFeedback = { feedbackManager.hapticFeedback(hapticView) },
+                                onHapticFeedback = {
+                                    if (com.kingzcheung.xime.ui.theme.XimeHapticFeedbackGate.acquire(hapticView)) {
+                                        feedbackManager.hapticFeedback(hapticView)
+                                    }
+                                },
                                 onCardPositioned = { left: Int, top: Int, right: Int, bottom: Int ->
                                     val cardHeightPx = bottom - top
                                     if (cardHeightPx > 0) {
@@ -1817,15 +1834,13 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                 },
                             )
                            }
+                           }
                            if (state.showKeyboardResize) {
-                              // 键盘调节层：渲染在键盘内容 Box 内部，matchParentSize 与键盘
-                              // 同一矩形——遮罩、四边手柄、三按钮与键盘像素级对齐，不存在
-                              // 坐标复制误差。拖动中实时预览，「确定」才落盘；「取消」全部
-                              // 还原；「重置」回默认（预览态，仍需确定）。边界收敛在
-                              // KeyboardResizeBounds，覆盖层只上报合法绝对值。
+                              // 覆盖层命中区域覆盖 IME 全高；键盘按键区仍从窗口顶部开始，底柄可进入系统手势区。
                               KeyboardResizeOverlay(
                                   heightDp = state.resizePreviewHeightDp,
                                   bottomPaddingDp = state.keyboardBottomPaddingDp,
+                                  bottomExtensionDp = activeBottomDp,
                                   marginStartDp = state.resizePreviewMarginStartDp,
                                   marginEndDp = state.resizePreviewMarginEndDp,
                                   onHeightChange = { newHeight ->
@@ -1876,9 +1891,11 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
                                           resizePreviewMarginEndDp = restoreEnd,
                                       )
                                   },
-                                  modifier = Modifier.matchParentSize()
+                                  modifier = Modifier
+                                      .matchParentSize()
+                                      .then(if (isTabletDevice) Modifier else Modifier.padding(start = horizontalInsetDp.first, end = horizontalInsetDp.second))
+                                      .padding(start = state.resizePreviewMarginStartDp.dp, end = state.resizePreviewMarginEndDp.dp)
                               )
-                          }
                            }
                             if (!state.isFloatingMode && navBarDp > 0.dp) {
                                 Spacer(modifier = Modifier.fillMaxWidth().height(navBarDp))
@@ -2200,6 +2217,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
 
     
     override fun onStartInput(attribute: EditorInfo?, restarting: Boolean) {
+        com.kingzcheung.xime.settings.DictionaryPackManager.setInputActive(true)
         super.onStartInput(attribute, restarting)
         lifecycleRegistry.handleLifecycleEvent(Lifecycle.Event.ON_RESUME)
         loadDarkModePreference()
@@ -2706,6 +2724,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         asciiModeController.restoreDefaultChoice()
         clearInputState()
         recentClipboardItemsState.value = emptyList()
+        deployPendingDictionaryPacks()
     }
     
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -2720,6 +2739,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         super.onWindowHidden()
         clearInputState()
         recentClipboardItemsState.value = emptyList()
+        deployPendingDictionaryPacks()
         // 键盘隐藏时重置快捷发送表单临时态：表单开启状态下直接隐藏键盘（未走 onClose）
         // 会把 showQuickSendForm 残留到下次弹窗，候选栏上方渲染出残留表单背景造成遮挡；
         // 回车键文案也需一并还原（打开表单时被改为"确定"）。
@@ -2738,8 +2758,17 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
         }
     }
 
+    private fun deployPendingDictionaryPacks() {
+        com.kingzcheung.xime.settings.DictionaryPackManager.setInputActive(false)
+        serviceScope.launch(Dispatchers.IO) {
+            runCatching { com.kingzcheung.xime.settings.DictionaryPackManager.applyPending(this@XimeInputMethodService) }
+                .onFailure { FileLogger.e(TAG, "Dictionary pack deployment failed", it) }
+        }
+    }
+
     override fun onWindowShown() {
         super.onWindowShown()
+        com.kingzcheung.xime.settings.DictionaryPackManager.setInputActive(true)
         // 键盘弹出时对比系统取色与缓存的动态主题色，壁纸取色变化则重建主题并热更新 UI。
         // 每次弹出只做两次资源读取对比，取色未变时零成本。
         KeyboardThemes.refreshDynamicSchemes(this)
@@ -2844,6 +2873,7 @@ class XimeInputMethodService : InputMethodService(), LifecycleOwner, SavedStateR
     }
 
     override fun onDestroy() {
+        com.kingzcheung.xime.settings.DictionaryPackManager.setInputActive(false)
         super.onDestroy()
         sharedPrefsListener?.let {
             SettingsPreferences.getPrefsPublic(this).unregisterOnSharedPreferenceChangeListener(it)

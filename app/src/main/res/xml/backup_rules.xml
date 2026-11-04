@@ -10,4 +10,9 @@
          云备份配额仅 25MB，纳入会挤掉其它数据；图片属可重建的本机临时数据，
          跨设备迁移走剪贴板同步插件而非 Auto Backup。 -->
     <exclude domain="file" path="clipboard_images/" />
+    <exclude domain="file" path="dictionary-packs/transaction/" />
+    <exclude domain="file" path="dictionary-packs/previous/" />
+    <!-- AndroidKeyStore-bound tokens and encrypted Bitwarden cache cannot be restored independently. -->
+    <exclude domain="file" path="bitwarden-sync.enc" />
+    <exclude domain="sharedpref" path="xime_bitwarden_vault.xml" />
 </full-backup-content>

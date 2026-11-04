@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -326,7 +327,7 @@ fun BackupSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_tongbuyubeifen)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -372,7 +373,7 @@ fun BackupSettingsContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Button(
-                                onClick = onNavigateToMarket,
+                                onClick = hapticAction(onNavigateToMarket),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(tr(R.string.s_qianwangkuozhanshangdian))
@@ -616,15 +617,15 @@ fun BackupSettingsContent(
             title = { Text(tr(R.string.s_shanchuyunduanbeifen)) },
             text = { Text(tr(R.string.s_jiangyongjiushanchu_shanchuhou_95640, entry.name)) },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(onClick = hapticAction(TextButton@ {
                     pendingDeleteEntry = null
                     runDeleteRemote(entry)
-                }) {
-                    Text(tr(R.string.s_shanchu), color = MaterialTheme.colorScheme.error)
+                })) {
+                    Text("删除", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { pendingDeleteEntry = null }) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(TextButton@ { pendingDeleteEntry = null })) { Text("取消") }
             }
         )
     }
@@ -641,13 +642,13 @@ fun BackupSettingsContent(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
+                TextButton(onClick = hapticAction(TextButton@ {
                     pendingRestoreEntry = null
                     runRestore(entry)
-                }) { Text(tr(R.string.s_huifu)) }
+                })) { Text("恢复") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingRestoreEntry = null }) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(TextButton@ { pendingRestoreEntry = null })) { Text("取消") }
             }
         )
     }
@@ -665,7 +666,7 @@ fun BackupSettingsContent(
             },
             confirmButton = {
                 TextButton(
-                    onClick = {
+                    onClick = hapticAction(TextButton@ {
                         pendingLocalImportUri = null
                         busyOp = "importLocal"
                         scope.launch(Dispatchers.IO) {
@@ -681,11 +682,11 @@ fun BackupSettingsContent(
                                 )
                             }
                         }
-                    }
-                ) { Text(tr(R.string.s_daoru)) }
+                    })
+                ) { Text("导入") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingLocalImportUri = null }) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(TextButton@ { pendingLocalImportUri = null })) { Text("取消") }
             }
         )
     }
@@ -812,7 +813,7 @@ private fun FailureRow(message: String, enabled: Boolean, onRetry: () -> Unit) {
             color = MaterialTheme.colorScheme.error,
             modifier = Modifier.weight(1f)
         )
-        TextButton(onClick = onRetry, enabled = enabled) { Text(tr(R.string.s_zhongshi)) }
+        TextButton(onClick = hapticAction(onRetry), enabled = enabled) { Text("重试") }
     }
 }
 
@@ -885,7 +886,7 @@ private fun WordCardActions(
             FailureRow(message = error, enabled = !blocking, onRetry = onSync)
         }
         Button(
-            onClick = onSync,
+            onClick = hapticAction(onSync),
             enabled = !blocking,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -971,7 +972,7 @@ private fun BackupCardActions(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
                 )
-                TextButton(onClick = onConfigure, enabled = !blocking) { Text(tr(R.string.s_qupeizhi)) }
+                TextButton(onClick = hapticAction(onConfigure), enabled = !blocking) { Text("去配置") }
             }
         }
         if (error != null) {
@@ -982,7 +983,7 @@ private fun BackupCardActions(
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Button(
-                onClick = onBackup,
+                onClick = hapticAction(onBackup),
                 modifier = Modifier.weight(1f),
                 enabled = !blocking && serviceReady
             ) {
@@ -1001,7 +1002,7 @@ private fun BackupCardActions(
                 )
             }
             OutlinedButton(
-                onClick = onToggleExpanded,
+                onClick = hapticAction(onToggleExpanded),
                 modifier = Modifier.weight(1f),
                 // 拉列表是只读轻操作：只禁用它自己，不阻塞页面其他动作
                 enabled = busyOp == null || busyOp == "list"
@@ -1035,7 +1036,7 @@ private fun BackupCardActions(
                     modifier = Modifier.weight(1f)
                 )
                 TextButton(
-                    onClick = onRefresh,
+                    onClick = hapticAction(onRefresh),
                     enabled = busyOp == null || busyOp == "list"
                 ) { Text(tr(R.string.s_zhongshi)) }
             }
@@ -1066,7 +1067,7 @@ private fun BackupCardActions(
                         RemoteEntryMetaRow(entry, mbUnit = true)
                     }
                     TextButton(
-                        onClick = { onRestore(entry) },
+                        onClick = hapticAction(TextButton@ { onRestore(entry) }),
                         enabled = !blocking
                     ) {
                         if (busyOp == "restore:${entry.id}") {
@@ -1079,7 +1080,7 @@ private fun BackupCardActions(
                         }
                     }
                     IconButton(
-                        onClick = { onDelete(entry) },
+                        onClick = hapticAction(IconButton@ { onDelete(entry) }),
                         enabled = !blocking && busyOp != "delete:${entry.id}"
                     ) {
                         if (busyOp == "delete:${entry.id}") {
@@ -1228,7 +1229,7 @@ private fun CurrentBackupServiceItem(
 private fun ServiceConfigChip(configured: Boolean?, onClick: () -> Unit) {
     val ready = configured == true
     AssistChip(
-        onClick = onClick,
+        onClick = hapticAction(onClick),
         label = {
             Text(
                 text = if (ready) tr(R.string.s_yipeizhi) else tr(R.string.s_peizhi),

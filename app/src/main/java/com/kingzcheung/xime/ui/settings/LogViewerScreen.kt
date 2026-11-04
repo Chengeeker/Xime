@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.util.Log
 import android.widget.Toast
@@ -116,7 +117,7 @@ fun LogViewerScreen(
                     )
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -127,18 +128,18 @@ fun LogViewerScreen(
                     val targetFile = uiState.selectedLogFile
                         ?: uiState.logFiles.firstOrNull()
                     if (targetFile != null) {
-                        TextButton(onClick = { viewModel.saveToDownloads(targetFile) }) {
-                            Text(tr(R.string.s_baocun))
+                        TextButton(onClick = hapticAction(TextButton@ { viewModel.saveToDownloads(targetFile) })) {
+                            Text("保存")
                         }
                     }
-                    IconButton(onClick = { viewModel.loadLogFiles() }) {
+                    IconButton(onClick = hapticAction(IconButton@ { viewModel.loadLogFiles() })) {
                         Icon(
                             imageVector = Icons.Default.Refresh,
                             contentDescription = tr(R.string.s_shuaxin)
                         )
                     }
                     if (uiState.logFiles.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.clearAllLogs() }) {
+                        IconButton(onClick = hapticAction(IconButton@ { viewModel.clearAllLogs() })) {
                             Icon(
                                 imageVector = Icons.Default.Delete,
                                 contentDescription = tr(R.string.s_qingkongsuoyourizhi)
@@ -177,8 +178,8 @@ fun LogViewerScreen(
                         text = uiState.errorMsg!!,
                         color = MaterialTheme.colorScheme.error
                     )
-                    Button(onClick = { viewModel.loadLogFiles() }) {
-                        Text(tr(R.string.s_zhongxinjiazai))
+                    Button(onClick = hapticAction(Button@ { viewModel.loadLogFiles() })) {
+                        Text("重新加载")
                     }
                 }
             }
@@ -235,20 +236,20 @@ private fun LogContentSection(
                 fontWeight = FontWeight.Medium
             )
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = onBackToList) {
-                    Text(tr(R.string.s_fanhuiliebiao))
+                TextButton(onClick = hapticAction(onBackToList)) {
+                    Text("返回列表")
                 }
-                TextButton(onClick = onSave) {
-                    Text(tr(R.string.s_baocun))
+                TextButton(onClick = hapticAction(onSave)) {
+                    Text("保存")
                 }
-                IconButton(onClick = onShare) {
+                IconButton(onClick = hapticAction(onShare)) {
                     Icon(
                         Icons.Default.Share,
                         contentDescription = tr(R.string.s_fenxiang),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = onDelete) {
+                IconButton(onClick = hapticAction(onDelete)) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = tr(R.string.s_shanchucirizhi),
@@ -406,7 +407,7 @@ private fun LogFileItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = onClick,
+        onClick = hapticAction(onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -468,17 +469,17 @@ private fun LogFileItem(
             }
             
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                TextButton(onClick = onSave) {
-                    Text(tr(R.string.s_baocun), style = MaterialTheme.typography.labelSmall)
+                TextButton(onClick = hapticAction(onSave)) {
+                    Text("保存", style = MaterialTheme.typography.labelSmall)
                 }
-                IconButton(onClick = onShare) {
+                IconButton(onClick = hapticAction(onShare)) {
                     Icon(
                         Icons.Default.Share,
                         contentDescription = tr(R.string.s_fenxiang),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
-                IconButton(onClick = onDelete) {
+                IconButton(onClick = hapticAction(onDelete)) {
                     Icon(
                         Icons.Default.Delete,
                         contentDescription = tr(R.string.s_shanchu),
@@ -501,7 +502,7 @@ private fun PluginErrorsCard(
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        onClick = { showDetail = true },
+        onClick = hapticAction(Card@ { showDetail = true }),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f)
         )
@@ -650,13 +651,13 @@ private fun PluginErrorsDetailDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCopy() }) {
-                Text(tr(R.string.s_fuzhizhenduanxinxi))
+            TextButton(onClick = hapticAction(TextButton@ { onCopy() })) {
+                Text("复制诊断信息")
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text(tr(R.string.s_guanbi))
+            TextButton(onClick = hapticAction(onDismiss)) {
+                Text("关闭")
             }
         }
     )

@@ -10,6 +10,7 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.snap
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
@@ -73,8 +75,6 @@ fun EmojiKeyboardLayout(
     accentColor: Color,
     bottomPaddingDp: Int = 0,
     modifier: Modifier = Modifier,
-    /** 分类 tab 切换的振动钩子（emoji 点击/删除经 onEmojiSelect 由调用方统一振动）。 */
-    onHapticFeedback: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val clipboardManager = remember { ClipboardManager.getInstance(context) }
@@ -194,7 +194,6 @@ fun EmojiKeyboardLayout(
                                     else Color.Transparent
                                 )
                                 .tolerantClick {
-                                    onHapticFeedback?.invoke()
                                     selectedTopTabIndex = 0
                                     selectedSubCategoryIndex = 0
                                 }
@@ -220,7 +219,6 @@ fun EmojiKeyboardLayout(
                                         else Color.Transparent
                                     )
                                     .tolerantClick {
-                                        onHapticFeedback?.invoke()
                                         selectedTopTabIndex = index + 1
                                         selectedSubCategoryIndex = 0
                                     }
@@ -231,7 +229,7 @@ fun EmojiKeyboardLayout(
                                     AsyncImage(
                                         model = ImageRequest.Builder(context)
                                             .data(pluginIcon.assetName)
-                                            .crossfade(true)
+                                            .crossfade(false)
                                             .build(),
                                         contentDescription = firstCat.name,
                                         modifier = Modifier
@@ -259,7 +257,7 @@ fun EmojiKeyboardLayout(
 
         // 外部切换分类时同步到 Pager
         LaunchedEffect(currentPageIndex) {
-            pagerState.animateScrollToPage(currentPageIndex)
+            pagerState.scrollToPage(currentPageIndex)
         }
 
         // Pager 滑动时同步到外部状态
@@ -286,6 +284,7 @@ fun EmojiKeyboardLayout(
 
         HorizontalPager(
             state = pagerState,
+            flingBehavior = PagerDefaults.flingBehavior(pagerState, snapAnimationSpec = snap()),
             modifier = Modifier
                 .fillMaxWidth()
                 .weight(1f)
@@ -439,10 +438,7 @@ fun EmojiKeyboardLayout(
                                 icon = localizeData(category.name),
                                 pluginIcon = null,
                                 isSelected = index == selectedSubCategoryIndex,
-                                onClick = {
-                                    onHapticFeedback?.invoke()
-                                    selectedSubCategoryIndex = index
-                                },
+                                onClick = { selectedSubCategoryIndex = index },
                                 backgroundColor = backgroundColor,
                                 textColor = textColor,
                                 selectedBackgroundColor = accentColor,
@@ -453,10 +449,7 @@ fun EmojiKeyboardLayout(
                                 icon = category.icon,
                                 pluginIcon = category.pluginIcon,
                                 isSelected = index == selectedSubCategoryIndex,
-                                onClick = {
-                                    onHapticFeedback?.invoke()
-                                    selectedSubCategoryIndex = index
-                                },
+                                onClick = { selectedSubCategoryIndex = index },
                                 backgroundColor = backgroundColor,
                                 textColor = textColor,
                                 selectedBackgroundColor = accentColor,
@@ -515,7 +508,7 @@ fun EmojiCategoryTab(
             AsyncImage(
                 model = ImageRequest.Builder(context)
                     .data(pluginIcon.assetName)
-                    .crossfade(true)
+                    .crossfade(false)
                     .build(),
                 contentDescription = icon,
                 modifier = Modifier

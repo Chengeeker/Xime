@@ -1,6 +1,9 @@
 # App ProGuard rules
 -dontobfuscate
 
+# Release instrumentation shares these Kotlin runtime entry points.
+-keep class kotlin.jvm.internal.Intrinsics { *; }
+
 -optimizations !class/merging/*
 
 # Keep utility classes used by Application and services

@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -154,7 +156,7 @@ fun SpeechToTextSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_yuyinzhuanwenben)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -234,10 +236,10 @@ fun SpeechToTextSettingsContent(
                             }
                             Switch(
                                 checked = keepEngineAlive,
-                                onCheckedChange = {
+                                onCheckedChange = hapticToggle(Switch@ {
                                     keepEngineAlive = it
                                     SettingsPreferences.setSttKeepEngineAlive(context, it)
-                                },
+                                }),
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                                     checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -339,7 +341,7 @@ fun OnlineAsrTab(
 
         item {
             OutlinedButton(
-                onClick = onManagePlugins,
+                onClick = hapticAction(onManagePlugins),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(Icons.Default.Extension, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -450,7 +452,7 @@ private fun CurrentAsrProviderItem(
             }
         }
         if (provider != null) {
-            IconButton(onClick = onSettings) {
+            IconButton(onClick = hapticAction(onSettings)) {
                 Icon(
                     Icons.Default.Settings,
                     contentDescription = tr(R.string.s_peizhi_3, provider.name),

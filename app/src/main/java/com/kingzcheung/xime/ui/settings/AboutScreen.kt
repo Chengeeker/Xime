@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import android.os.Build
 import androidx.compose.foundation.clickable
@@ -83,7 +85,7 @@ object AppInfo {
         LicenseItem(
             name = tr(R.string.s_xima),
             license = "GPL-3.0",
-            url = "https://github.com/ximeiorg/Xime"
+            url = "https://github.com/Chengeeker/Xime"
         ),
         LicenseItem(
             name = "librime",
@@ -166,12 +168,13 @@ fun AboutContent(
     }
     
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_guanyu)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -190,52 +193,49 @@ fun AboutContent(
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            contentPadding = PaddingValues(vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // App 信息
             item {
-                Card(
+                androidx.compose.material3.Surface(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    shape = MaterialTheme.shapes.extraLarge,
+                    color = MaterialTheme.colorScheme.surfaceContainerLow
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
-                            text = tr(R.string.s_xima_xime),
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = "曦码（Xime）",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.SemiBold,
                             color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = tr(R.string.s_jiyurime_goujian_zhichiwubi_pi_a444c),
-                            fontSize = 13.sp,
+                            text = "基于Rime 构建，支持五笔/拼音/自定义方案。",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        Spacer(modifier = Modifier.height(16.dp))
+                        Spacer(modifier = Modifier.height(20.dp))
                         Text(
-                            text = tr(R.string.s_banben, AppInfo.versionName, AppInfo.versionCode),
-                            fontSize = 14.sp,
+                            text = "版本 ${AppInfo.versionName} (${AppInfo.versionCode})",
+                            style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = tr(R.string.s_goujian, AppInfo.gitHash),
-                            fontSize = 12.sp,
+                            text = "构建: ${AppInfo.gitHash}",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(12.dp))
-                        
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { uriHandler.openUri("https://github.com/ximeiorg/Xime/releases") },
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
+                        androidx.compose.material3.TextButton(
+                            onClick = hapticAction {
+                                uriHandler.openUri("https://github.com/Chengeeker/Xime/releases")
+                            }
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.OpenInNew,
@@ -245,8 +245,8 @@ fun AboutContent(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = tr(R.string.s_chakanzuixinbanben),
-                                fontSize = 14.sp,
+                                text = "查看最新版本",
+                                style = MaterialTheme.typography.labelLarge,
                                 color = MaterialTheme.colorScheme.primary
                             )
                         }
@@ -254,207 +254,123 @@ fun AboutContent(
                 }
             }
             
-            // 作者信息
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp)
-                    ) {
-                        Text(
-                            text = tr(R.string.s_zuozhe),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { uriHandler.openUri("https://github.com/kingzcheung") },
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.TwoTone.PersonOutline,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Kor1 (kingzcheung)",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
-                                Text(
-                                    text = "github.com/kingzcheung",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.AutoMirrored.TwoTone.OpenInNew,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    }
-                }
+                SettingsSection(title = "项目", content = {
+                    SettingsItem(
+                        icon = Icons.TwoTone.PersonOutline,
+                        title = "作者",
+                        subtitle = "Chengeeker · github.com/Chengeeker/Xime",
+                        onClick = { uriHandler.openUri("https://github.com/Chengeeker/Xime") },
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.Code,
+                        title = "源代码",
+                        subtitle = "github.com/Chengeeker/Xime",
+                        onClick = { uriHandler.openUri("https://github.com/Chengeeker/Xime") },
+                        showArrow = true
+                    )
+                })
             }
-            
-            // 源代码
+
             item {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            uriHandler.openUri("https://github.com/ximeiorg/Xime")
-                        },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.TwoTone.Code,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = tr(R.string.s_yuandaima),
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "github.com/ximeiorg/Xime",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.OpenInNew,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                SettingsSection(title = "更多", content = {
+                    SettingsItem(
+                        icon = Icons.TwoTone.PrivacyTip,
+                        title = "隐私策略",
+                        subtitle = "了解数据处理与隐私说明",
+                        onClick = onNavigateToPrivacy,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.Description,
+                        title = "开源许可证",
+                        subtitle = "查看应用及第三方组件许可",
+                        onClick = onNavigateToLicenses,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.BugReport,
+                        title = "日志查看器",
+                        subtitle = "查看应用运行日志",
+                        onClick = onNavigateToLogViewer,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.Storage,
+                        title = "存储空间",
+                        subtitle = "查看和管理本地数据",
+                        onClick = onNavigateToStorageSpace,
+                        showArrow = true
+                    )
+                    if (devUnlocked || BuildConfig.DEBUG) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = 56.dp),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.24f)
                         )
                     }
-                }
-            }
-            
-            // 链接项
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Column {
+                    if (devUnlocked) {
                         SettingsItem(
-                            icon = Icons.TwoTone.PrivacyTip,
-                            title = tr(R.string.s_yinsicelve),
-                            onClick = onNavigateToPrivacy
+                            icon = Icons.Default.Code,
+                            title = "开发者选项",
+                            subtitle = "高级调试与开发功能",
+                            onClick = onNavigateToDeveloper,
+                            showArrow = true
                         )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 72.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        SettingsItem(
-                            icon = Icons.TwoTone.Description,
-                            title = tr(R.string.s_kaiyuanxukezheng),
-                            onClick = onNavigateToLicenses
-                        )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 72.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
+                    }
+                    if (BuildConfig.DEBUG) {
                         SettingsItem(
                             icon = Icons.TwoTone.BugReport,
-                            title = tr(R.string.s_rizhichakanqi),
-                            onClick = onNavigateToLogViewer
+                            title = "调试日志",
+                            onClick = {},
+                            trailing = {
+                                Switch(
+                                    checked = verboseLoggingEnabled,
+                                    onCheckedChange = hapticToggle(Switch@ { enabled ->
+                                        verboseLoggingEnabled = enabled
+                                        SettingsPreferences.setVerboseLoggingEnabled(context, enabled)
+                                        FileLogger.setVerboseLoggingEnabled(enabled)
+                                    })
+                                )
+                            }
                         )
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = 72.dp),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                        )
-                        SettingsItem(
-                            icon = Icons.TwoTone.Storage,
-                            title = tr(R.string.s_cunchukongjian),
-                            onClick = onNavigateToStorageSpace
-                        )
-                        if (devUnlocked) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 72.dp),
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            SettingsItem(
-                                icon = Icons.Default.Code,
-                                title = tr(R.string.s_kaifazhexuanxiang),
-                                onClick = onNavigateToDeveloper
-                            )
-                        }
-                        if (BuildConfig.DEBUG) {
-                            HorizontalDivider(
-                                modifier = Modifier.padding(start = 72.dp),
-                                thickness = 0.5.dp,
-                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                            )
-                            SettingsItem(
-                                icon = Icons.TwoTone.BugReport,
-                                title = tr(R.string.s_diaoshirizhi),
-                                onClick = {},
-                                trailing = {
-                                    Switch(
-                                        checked = verboseLoggingEnabled,
-                                        onCheckedChange = { enabled ->
-                                            verboseLoggingEnabled = enabled
-                                            SettingsPreferences.setVerboseLoggingEnabled(context, enabled)
-                                            FileLogger.setVerboseLoggingEnabled(enabled)
-                                        }
-                                    )
-                                }
-                            )
-                        }
                     }
-                }
+                })
             }
-            
-            // 设备信息
+
             item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
+                SettingsSection(title = "设备信息", content = {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onDeviceInfoTapped() }
+                            .clickable(onClick = hapticAction(::onDeviceInfoTapped))
                             .padding(16.dp)
                     ) {
-                        Text(
-                            text = tr(R.string.s_shebeixinxi),
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        InfoRow(label = tr(R.string.s_xitongbanben), value = AppInfo.androidVersion)
-                        InfoRow(label = tr(R.string.s_shebeixinghao), value = AppInfo.deviceModel)
+                        InfoRow(label = "系统版本", value = AppInfo.androidVersion)
+                        InfoRow(label = "设备型号", value = AppInfo.deviceModel)
                     }
-                }
+                })
             }
         }
     }
@@ -482,7 +398,7 @@ internal fun SettingsItem(
         Spacer(modifier = Modifier.width(12.dp))
         Text(
             text = title,
-            fontSize = 16.sp,
+            style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.weight(1f)
         )
         if (trailing != null) {
@@ -507,12 +423,12 @@ private fun InfoRow(label: String, value: String) {
     ) {
         Text(
             text = label,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
-            fontSize = 14.sp,
+            style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurface
         )
     }
@@ -529,7 +445,7 @@ fun PrivacyPolicyContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_yinsicelve)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -639,7 +555,7 @@ fun LicensesContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_kaiyuanxukezheng)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)

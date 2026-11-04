@@ -5,7 +5,7 @@ import com.kingzcheung.xime.R
 import com.kingzcheung.xime.i18n.tr
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.animateScrollBy
+import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.lazy.LazyColumn
@@ -236,7 +236,7 @@ fun CandidatePage(
     fun scrollPage(direction: Int) {
         val viewport = viewportHeightPx
         if (viewport > 0) {
-            scrollScope.launch { listState.animateScrollBy(direction.toFloat() * viewport) }
+            scrollScope.launch { listState.scrollBy(direction.toFloat() * viewport) }
         }
     }
     // 候选内容变化（新输入/切过滤/删词）回到顶部（列表实例每次重组都新建，用哈希做键）

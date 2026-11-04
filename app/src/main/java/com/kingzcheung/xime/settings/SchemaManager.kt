@@ -703,7 +703,11 @@ object SchemaManager {
     }
 
     /** 内置方案（保持默认启用顺序）。 */
-    internal val BUILTIN_SCHEMAS = listOf("wubi86", "wubi86_pinyin", "pinyin_simp", "t9_pinyin", "english")
+    internal val BUILTIN_SCHEMAS = listOf(
+        "rime_frost",
+        "rime_frost_double_pinyin_flypy",
+        "rime_frost_mixed_flypy",
+    )
 
     /**
      * 启用方案列表（真相在 prefs，由 [com.kingzcheung.xime.scheme.SchemeStore] 维护）。

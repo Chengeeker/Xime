@@ -1,9 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
-
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +48,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -56,6 +57,8 @@ import com.kingzcheung.xime.settings.KeysConfigHelper
 import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.ui.keyboard.LocalKeyCornerRadius
 import com.kingzcheung.xime.ui.keyboard.crispShadowColor
+import com.kingzcheung.xime.ui.theme.GboardStyle
+import com.kingzcheung.xime.ui.theme.LocalGboardStyle
 import com.kingzcheung.xime.ui.theme.KeyboardColorScheme
 import com.kingzcheung.xime.ui.theme.KeyboardThemes
 import com.kingzcheung.xime.ui.theme.keyboardBackground
@@ -101,7 +104,7 @@ fun ThemePreviewSheet(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 OutlinedButton(
-                    onClick = onDismiss,
+                    onClick = hapticAction(onDismiss),
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
@@ -110,7 +113,7 @@ fun ThemePreviewSheet(
                     Text(tr(R.string.s_quxiao), fontSize = 16.sp)
                 }
                 Button(
-                    onClick = onApply,
+                    onClick = hapticAction(onApply),
                     modifier = Modifier
                         .weight(1f)
                         .height(48.dp),
@@ -215,16 +218,20 @@ private fun ThemeKeyboardPreview(
         ?: if (isDark) theme.candidateSelectedTextColorDark else theme.candidateSelectedTextColorLight
     val selectedBgColor = KeyboardThemes.getCandidateSelectedBgColor(theme.id, isDark)
     // 与实机键盘同一条取色逻辑（亮度自适应），保证预览所见即所得
-    val specialTextColor = KeyboardThemes.getSpecialKeyTextColorForBackground(
+    val specialTextColor = if (com.kingzcheung.xime.ui.theme.GboardStyle.matches(theme.id)) KeyboardThemes.getAccentColor(theme.id, isDark)
+    else KeyboardThemes.getSpecialKeyTextColorForBackground(
         specialKeyColor, textColor
     )
     val context = LocalContext.current
     val candidateTextSize = SettingsPreferences.getCandidateTextSize(context)
 
-    val cornerRadius = KeysConfigHelper.getKeyboardKeyConfig().cornerRadius.dp
+    val gboardStyle = GboardStyle.matches(theme.id)
+    val cornerRadius = if (gboardStyle) GboardStyle.KeyRadius else KeysConfigHelper.getKeyboardKeyConfig().cornerRadius.dp
+    val keyPadding = Modifier.padding(0.5.dp, 2.dp)
 
     CompositionLocalProvider(
         LocalKeyCornerRadius provides cornerRadius,
+        LocalGboardStyle provides gboardStyle,
     ) {
         Box(
             modifier = modifier
@@ -253,7 +260,7 @@ private fun ThemeKeyboardPreview(
                                     keyColor,
                                     textColor,
                                     1f,
-                                    extraModifier = Modifier.padding(0.5.dp, 2.dp)
+                                    extraModifier = keyPadding
                                 )
                             }
                         }
@@ -271,7 +278,7 @@ private fun ThemeKeyboardPreview(
                                     keyColor,
                                     textColor,
                                     1f,
-                                    extraModifier = Modifier.padding(0.5.dp, 2.dp)
+                                    extraModifier = keyPadding
                                 )
                             }
                         }
@@ -289,7 +296,7 @@ private fun ThemeKeyboardPreview(
                             label = "",
                             icon = rememberVectorPainter(Icons.TwoTone.KeyboardControlKey),
                             color = specialKeyColor, textColor = specialTextColor, weight = 1.4f,
-                            extraModifier = Modifier.padding(0.5.dp, 2.dp)
+                            extraModifier = keyPadding
                         )
 
                         Row(
@@ -304,7 +311,7 @@ private fun ThemeKeyboardPreview(
                                     keyColor,
                                     textColor,
                                     1f,
-                                    extraModifier = Modifier.padding(0.5.dp, 2.dp)
+                                    extraModifier = keyPadding
                                 )
                             }
                         }
@@ -313,7 +320,7 @@ private fun ThemeKeyboardPreview(
                             label = "",
                             icon = rememberVectorPainter(Icons.AutoMirrored.Filled.Backspace),
                             color = specialKeyColor, textColor = specialTextColor, weight = 1.4f,
-                            extraModifier = Modifier.padding(0.5.dp, 2.dp)
+                            extraModifier = keyPadding
                         )
                     }
 
@@ -324,11 +331,11 @@ private fun ThemeKeyboardPreview(
                             .weight(1f),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        PreviewKey("?123", specialKeyColor, specialTextColor, 1.2f,extraModifier = Modifier.padding(0.5.dp, 2.dp))
-                        PreviewKey("，", keyColor, textColor, 0.8f,extraModifier = Modifier.padding(0.5.dp, 2.dp))
-                        PreviewKey(tr(R.string.s_kongge), keyColor, textColor, 3f, fontSize = 9.sp,extraModifier = Modifier.padding(0.5.dp, 2.dp))
-                        PreviewKey(tr(R.string.s_zhong_en), specialKeyColor, specialTextColor, 0.8f, fontSize = 8.sp,extraModifier = Modifier.padding(0.5.dp, 2.dp))
-                        PreviewKey(tr(R.string.s_queding), specialKeyColor, specialTextColor, 1.2f,extraModifier = Modifier.padding(0.5.dp, 2.dp))
+                        PreviewKey("?123", specialKeyColor, specialTextColor, 1.2f,extraModifier = keyPadding)
+                        PreviewKey("，", if (gboardStyle) specialKeyColor else keyColor, if (gboardStyle) specialTextColor else textColor, 0.8f,extraModifier = keyPadding)
+                        PreviewKey("空格", keyColor, textColor, 3f, fontSize = 9.sp,extraModifier = keyPadding)
+                        PreviewKey("中/En", specialKeyColor, specialTextColor, 0.8f, fontSize = 8.sp,extraModifier = keyPadding)
+                        PreviewKey("确定", specialKeyColor, specialTextColor, 1.2f,extraModifier = keyPadding)
                     }
                 }
             }
@@ -410,10 +417,11 @@ private fun RowScope.PreviewKey(
     fontSize: androidx.compose.ui.unit.TextUnit = 14.sp,
     extraModifier: Modifier = Modifier,
 ) {
+    val gboardStyle = LocalGboardStyle.current
     val shadow = KeysConfigHelper.getKeyboardShadow()
     val density = LocalDensity.current
-    val shadowModifier = remember(shadow, density, color) {
-        if (shadow.enabled) {
+    val shadowModifier = remember(shadow, density, color, gboardStyle) {
+        if (shadow.enabled && !gboardStyle) {
             val offsetPx = with(density) { shadow.elevation.dp.toPx() }
             val cornerPx = with(density) { shadow.shapeRadius.dp.toPx() }
             Modifier.drawBehind {
@@ -433,7 +441,7 @@ private fun RowScope.PreviewKey(
             .fillMaxHeight()
             .fillMaxWidth()
             .then(shadowModifier)
-            .clip(RoundedCornerShape(LocalKeyCornerRadius.current))
+            .clip(RoundedCornerShape(if (gboardStyle && (label == "?123" || label == "确定")) GboardStyle.FunctionRadius else LocalKeyCornerRadius.current))
             .background(color),
         contentAlignment = Alignment.Center,
     ) {
@@ -447,11 +455,23 @@ private fun RowScope.PreviewKey(
         } else {
             Text(
                 text = label,
-                fontSize = fontSize,
+                fontSize = if (gboardStyle && label.length == 1 && label[0].isLetter()) GboardStyle.LetterSize else fontSize,
                 color = textColor,
-                fontWeight = FontWeight.Medium,
+                fontWeight = if (gboardStyle) FontWeight.Normal else FontWeight.Medium,
                 maxLines = 1,
             )
         }
     }
+}
+
+@Preview(name = "Gboard Inspired Light", widthDp = 360, heightDp = 281)
+@Composable
+private fun GboardLightPreview() {
+    ThemeKeyboardPreview(GboardStyle.theme, isDark = false, modifier = Modifier.fillMaxSize())
+}
+
+@Preview(name = "Gboard Inspired Dark", widthDp = 360, heightDp = 281)
+@Composable
+private fun GboardDarkPreview() {
+    ThemeKeyboardPreview(GboardStyle.theme, isDark = true, modifier = Modifier.fillMaxSize())
 }

@@ -1,0 +1,23 @@
+{
+  "name": "chaifen",
+  "segmentation": {
+    "type": "mmseg",
+    "dict": {
+      "type": "text",
+      "file": "rime_frost_moqi_chaifen.txt"
+    }
+  },
+  "conversion_chain": [
+    {
+      "dict": {
+        "type": "group",
+        "dicts": [
+          {
+            "type": "text",
+            "file": "rime_frost_moqi_chaifen.txt"
+          }
+        ]
+      }
+    }
+  ]
+}

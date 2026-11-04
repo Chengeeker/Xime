@@ -13,16 +13,34 @@ import com.kingzcheung.xime.scheme.SchemeInstaller
 import com.kingzcheung.xime.scheme.SchemeStore
 import com.kingzcheung.xime.settings.RimeDependencyResolver
 import com.kingzcheung.xime.settings.RimeSharedFiles
+import com.kingzcheung.xime.settings.SettingsPreferences
 import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
 import java.io.File
+import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.Properties
+
+internal enum class FrostAssetSyncAction { COPY, TRACK, PRESERVE }
+
+internal fun frostAssetSyncAction(previousHash: String?, currentHash: String?, sourceHash: String): FrostAssetSyncAction = when {
+    currentHash == null -> FrostAssetSyncAction.COPY
+    previousHash != null && currentHash == previousHash -> FrostAssetSyncAction.COPY
+    currentHash == sourceHash -> FrostAssetSyncAction.TRACK
+    else -> FrostAssetSyncAction.PRESERVE
+}
 
 object RimeConfigHelper {
     private const val TAG = "RimeConfigHelper"
     private const val ASSETS_RIME_DIR = "rime"
+    private const val ASSETS_RIME_FROST_DIR = "rime-frost"
+    private const val RIME_FROST_BUNDLE_REVISION = "f1bc68b308adcca916c51bcaad25a267876e6efe"
+    private const val RIME_FROST_ASSET_MANIFEST = "rime_frost_assets.properties"
+    private const val BUFFER_SIZE = 8192
     /** 内置 OpenCC 简繁转换数据：随内置方案集放在 assets/rime/opencc。 */
     private const val ASSETS_OPENCC_DIR = "rime/opencc"
     /** librime 查找 OpenCC 配置的目录名（相对 rime 数据目录）。 */
@@ -36,6 +54,116 @@ object RimeConfigHelper {
     private const val BUILTIN_PLACEHOLDER_VERSION = "0.0.0"
     /** 用户配置 BOM 扫描上限：词典等大文件不参与（体积大且不应被编辑器改写）。 */
     private const val BOM_SCAN_MAX_BYTES = 4L * 1024 * 1024
+
+    @Synchronized
+    private fun syncRimeFrostAssets(context: Context, rimeDir: File): Boolean {
+        val assets = listRimeFrostAssets(context)
+        if (assets.isEmpty() || "rime_frost.schema.yaml" !in assets) {
+            throw IOException("Bundled Frost schema is missing")
+        }
+        val manifestFile = File(context.filesDir, RIME_FROST_ASSET_MANIFEST)
+        val manifest = Properties().apply {
+            if (manifestFile.isFile) runCatching { manifestFile.inputStream().use { load(it) } }
+        }
+        val allPresent = assets.all { relative -> safeRimeTarget(rimeDir, relative)?.isFile == true }
+        if (SettingsPreferences.getRimeFrostAssetsRevision(context) == RIME_FROST_BUNDLE_REVISION && allPresent) return false
+
+        for (relative in assets) {
+            val target = safeRimeTarget(rimeDir, relative) ?: throw IOException("Invalid bundled Frost path")
+            val sourceHash = assetSha256(context, "$ASSETS_RIME_FROST_DIR/$relative")
+            val currentHash = if (target.isFile) fileSha256(target) else null
+            val previousHash = manifest.getProperty(relative)
+            when (frostAssetSyncAction(previousHash, currentHash, sourceHash)) {
+                FrostAssetSyncAction.COPY -> {
+                    if (currentHash != sourceHash) copyFrostAssetAtomically(context, relative, target)
+                    manifest.setProperty(relative, sourceHash)
+                }
+                FrostAssetSyncAction.TRACK -> manifest.setProperty(relative, sourceHash)
+                FrostAssetSyncAction.PRESERVE -> {
+                    manifest.remove(relative)
+                    Log.i(TAG, "Preserved user-edited Frost resource: $relative")
+                }
+            }
+        }
+        writeFrostAssetManifest(manifest, manifestFile)
+        SettingsPreferences.setRimeFrostAssetsRevision(context, RIME_FROST_BUNDLE_REVISION)
+        return true
+    }
+
+    private fun listRimeFrostAssets(context: Context): List<String> {
+        val result = mutableListOf<String>()
+        fun visit(path: String) {
+            val children = context.assets.list(path).orEmpty()
+            if (children.isEmpty()) {
+                val name = path.substringAfterLast('/')
+                if (name != "LICENSE" && name != "README.md" &&
+                    name.substringAfterLast('.', "") in setOf("yaml", "lua", "json", "txt", "ocd2")
+                ) result += path.removePrefix("$ASSETS_RIME_FROST_DIR/")
+            } else {
+                children.sorted().forEach { visit("$path/$it") }
+            }
+        }
+        visit(ASSETS_RIME_FROST_DIR)
+        return result
+    }
+
+    private fun safeRimeTarget(rimeDir: File, relative: String): File? {
+        if (relative.startsWith('/') || relative.split('/').any { it.isEmpty() || it == "." || it == ".." }) return null
+        val root = rimeDir.canonicalFile
+        val target = File(root, relative).canonicalFile
+        return target.takeIf { it.path.startsWith(root.path + File.separator) }
+    }
+
+    private fun assetSha256(context: Context, path: String): String =
+        context.assets.open(path).use { stream -> sha256(stream) }
+
+    private fun fileSha256(file: File): String = FileInputStream(file).use(::sha256)
+
+    private fun sha256(input: java.io.InputStream): String {
+        val digest = java.security.MessageDigest.getInstance("SHA-256")
+        val buffer = ByteArray(BUFFER_SIZE)
+        while (true) {
+            val count = input.read(buffer)
+            if (count < 0) break
+            digest.update(buffer, 0, count)
+        }
+        return digest.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+    }
+
+    private fun copyFrostAssetAtomically(context: Context, relative: String, target: File) {
+        target.parentFile?.mkdirs()
+        val temp = File(target.parentFile, "${target.name}.frost-tmp")
+        try {
+            context.assets.open("$ASSETS_RIME_FROST_DIR/$relative").use { input ->
+                FileOutputStream(temp).use { output ->
+                    input.copyTo(output, BUFFER_SIZE)
+                    output.fd.sync()
+                }
+            }
+            try {
+                Files.move(temp.toPath(), target.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+                Files.move(temp.toPath(), target.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            temp.delete()
+        }
+    }
+
+    private fun writeFrostAssetManifest(properties: Properties, file: File) {
+        val temp = File(file.parentFile, "${file.name}.tmp")
+        FileOutputStream(temp).use { output ->
+            properties.store(output, null)
+            output.fd.sync()
+        }
+        try {
+            Files.move(temp.toPath(), file.toPath(), StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+        } catch (_: java.nio.file.AtomicMoveNotSupportedException) {
+            Files.move(temp.toPath(), file.toPath(), StandardCopyOption.REPLACE_EXISTING)
+        } finally {
+            temp.delete()
+        }
+    }
 
     /** 部署互斥：Application 预初始化与输入法服务初始化可能并发触发部署，串行化避免重复/并发全量编译。 */
     private val deploymentLock = Any()
@@ -442,7 +570,7 @@ object RimeConfigHelper {
     }
 
     /**
-     * 老内置安装升级时补齐新增的内置方案文件（当前是 english 方案及其空格 filter）。
+     * 老内置安装升级时补齐 Frost 资源及新增的 english 方案文件。
      *
      * `copyAssetsToRimeDir` 只在 rime 目录为空时整包播种；已有方案内容不会被覆盖，
      * 所以升级安装必须单独补这些新文件，否则英文方案只存在于 assets、用户永远看不到。
@@ -463,7 +591,12 @@ object RimeConfigHelper {
         if (activePackageId != SchemeFiles.BUILTIN_PACKAGE_ID) {
             return 0
         }
-        var restored = 0
+        val frostUpdated = syncRimeFrostAssets(context, rimeDir)
+        if (frostUpdated) {
+            SchemeStore.invalidate()
+            SchemeStore.ensure(context)
+        }
+        var restored = if (frostUpdated) 1 else 0
         val englishSchema = File(rimeDir, "english.schema.yaml")
         val needsEnglishSchema = !englishSchema.isFile || englishSchema.length() == 0L ||
             !runCatching { englishSchema.readText(Charsets.UTF_8).contains("english_spacing") }

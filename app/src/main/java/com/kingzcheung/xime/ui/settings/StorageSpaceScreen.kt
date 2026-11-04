@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.text.format.Formatter
 import androidx.compose.foundation.clickable
@@ -96,14 +97,14 @@ fun StorageSpaceScreen(
             text = { Text(clearConfirmText(target.id)) },
             confirmButton = {
                 TextButton(
-                    onClick = {
+                    onClick = hapticAction(TextButton@ {
                         viewModel.clear(target.id, target.title)
                         pendingClear = null
-                    }
-                ) { Text(tr(R.string.s_qingli_2)) }
+                    })
+                ) { Text("清理") }
             },
             dismissButton = {
-                TextButton(onClick = { pendingClear = null }) { Text(tr(R.string.s_quxiao)) }
+                TextButton(onClick = hapticAction(TextButton@ { pendingClear = null })) { Text("取消") }
             }
         )
     }
@@ -114,7 +115,7 @@ fun StorageSpaceScreen(
             TopAppBar(
                 title = { Text(tr(R.string.s_cunchukongjian)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -242,7 +243,7 @@ fun StorageSpaceScreen(
                                 } else if (category.clearable) {
                                     TextButton(
                                         enabled = cleaningId == null,
-                                        onClick = { pendingClear = category }
+                                        onClick = hapticAction(TextButton@ { pendingClear = category })
                                     ) {
                                         if (cleaningId == category.id) {
                                             CircularProgressIndicator(

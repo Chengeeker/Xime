@@ -184,6 +184,12 @@ target_link_libraries(onnx_env
     log
 )
 
+# librime 的纠错 translator 使用 ONNX API 与共享执行环境。
+target_link_libraries(rime_jni
+    onnx_env
+    onnxruntime
+)
+
 add_library(onnx_jni SHARED
     onnx_jni.cc
 )

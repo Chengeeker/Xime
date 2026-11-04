@@ -15,13 +15,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,6 +46,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.TextUnit
@@ -49,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.kingzcheung.xime.settings.KeysConfigHelper
 import com.kingzcheung.xime.settings.PanelLayoutConfig
+import com.kingzcheung.xime.settings.SettingsPreferences
 import com.kingzcheung.xime.ui.isTablet
 import com.kingzcheung.xime.viewmodel.KeyboardUiState
 import com.kingzcheung.xime.viewmodel.KeyboardViewModel
@@ -80,7 +86,7 @@ fun PanelKeyboardLayout(
     specialKeyTextColor: Color = Color.White,
     bubbleBackgroundColor: Color = keyBackgroundColor,
     keyboardBackgroundColor: Color = Color.Transparent,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     keyCornerRadius: Dp = 8.dp,
@@ -94,6 +100,21 @@ fun PanelKeyboardLayout(
     /** 横屏分体（跟随分体设置）：rows 模式走统一左右拆分；columns 模式维持整块。 */
     landscapeSplit: Boolean = false,
 ) {
+    val context = LocalContext.current
+    var numberLayout by remember { mutableStateOf(SettingsPreferences.getNumberKeyboardLayout(context)) }
+    var emojiKeyEnabled by remember { mutableStateOf(SettingsPreferences.isEmojiKeyEnabled(context)) }
+    DisposableEffect(context) {
+        val prefs = SettingsPreferences.getPrefsPublic(context)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            when (key) {
+                "number_keyboard_layout" -> numberLayout = SettingsPreferences.getNumberKeyboardLayout(context)
+                "emoji_key_enabled" -> emojiKeyEnabled = SettingsPreferences.isEmojiKeyEnabled(context)
+            }
+        }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        onDispose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+    val effectiveSection = if (section == "number" && numberLayout == "full") "number_tablet" else section
     val configuration = LocalConfiguration.current
     val isLandscape = !isFloatingMode && configuration.screenWidthDp > configuration.screenHeightDp
     val useSplit = isLandscape && landscapeSplit
@@ -123,9 +144,14 @@ fun PanelKeyboardLayout(
         keyboardWidth = keyboardBounds.width,
     )
 
-    val layout = KeysConfigHelper.getPanelLayout(section)
+    val configuredLayout = KeysConfigHelper.getPanelLayout(effectiveSection)
+    val layout = if (emojiKeyEnabled || configuredLayout == null) configuredLayout else configuredLayout.copy(
+        rows = configuredLayout.rows.map { row -> row.filterNot { it == "emoji" } }.filter { it.isNotEmpty() },
+        left = configuredLayout.left.map { column -> column.filterNot { it == "emoji" } }.filter { it.isNotEmpty() },
+        right = configuredLayout.right.map { column -> column.filterNot { it == "emoji" } }.filter { it.isNotEmpty() },
+    )
     // 值键字号：数字键盘 = KeyButton 默认（与旧版 keyFontSize Unspecified 一致）；常用符号 = 20sp
-    val valueFontSize: TextUnit = if (section == "number") TextUnit.Unspecified else 20.sp
+    val valueFontSize: TextUnit = if (effectiveSection.startsWith("number")) TextUnit.Unspecified else 20.sp
     val env = QwertyRowEnv(
         isAsciiMode = isAsciiMode,
         isShifted = false,
@@ -154,8 +180,8 @@ fun PanelKeyboardLayout(
         configVersion = 0,
         landscape = false,
         fontSize = valueFontSize,
-        ctrlFontSize = if (section == "number") null else 14.sp,
-        section = section,
+        ctrlFontSize = if (effectiveSection.startsWith("number")) null else 14.sp,
+        section = effectiveSection,
     )
 
     CompositionLocalProvider(
@@ -358,24 +384,48 @@ private fun ColumnsPanelContent(layout: PanelLayoutConfig, env: QwertyRowEnv, mo
         ) {
             val pillarItems = layout.left.dropLast(1)
             val bottomKey = layout.left.lastOrNull()?.singleOrNull()
-            Column(
+            val pillarKeys = remember(pillarItems) { pillarItems.flatten() }
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(3f)
                     .padding(LocalKeyVisualPadding.current),
             ) {
-                pillarItems.forEachIndexed { itemIdx, item ->
-                    Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        item.forEachIndexed { keyIdx, keyId ->
+                if (pillarKeys.size <= 4) {
+                    Column(Modifier.fillMaxSize()) {
+                        pillarItems.forEachIndexed { itemIdx, item ->
+                            Column(modifier = Modifier.fillMaxWidth().weight(1f)) {
+                                item.forEachIndexed { keyIdx, keyId ->
+                                    OperatorPillarKey(
+                                        text = keyId,
+                                        onClick = { env.onKeyPress(keyId) },
+                                        backgroundColor = env.keyBackgroundColor,
+                                        textColor = env.keyTextColor,
+                                        modifier = Modifier.weight(1f),
+                                        onPress = { env.onKeyPressDown?.invoke(keyId) },
+                                        isFirst = itemIdx == 0 && keyIdx == 0,
+                                        isLast = itemIdx == pillarItems.lastIndex && keyIdx == item.lastIndex,
+                                        fontSize = 18.sp,
+                                        shadowEnabled = env.shadowEnabled,
+                                        shadowElevation = env.shadowElevation,
+                                        shadowShapeRadius = env.shadowShapeRadius,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    LazyColumn(Modifier.fillMaxSize()) {
+                        itemsIndexed(pillarKeys) { index, keyId ->
                             OperatorPillarKey(
                                 text = keyId,
                                 onClick = { env.onKeyPress(keyId) },
                                 backgroundColor = env.keyBackgroundColor,
                                 textColor = env.keyTextColor,
-                                modifier = Modifier.weight(1f),
+                                modifier = Modifier.fillMaxWidth().height(48.dp),
                                 onPress = { env.onKeyPressDown?.invoke(keyId) },
-                                isFirst = itemIdx == 0 && keyIdx == 0,
-                                isLast = itemIdx == pillarItems.lastIndex && keyIdx == item.lastIndex,
+                                isFirst = index == 0,
+                                isLast = index == pillarKeys.lastIndex,
                                 fontSize = 18.sp,
                                 shadowEnabled = env.shadowEnabled,
                                 shadowElevation = env.shadowElevation,
@@ -488,7 +538,7 @@ private fun OperatorPillarKey(
     isFirst: Boolean = false,
     isLast: Boolean = false,
     fontSize: TextUnit = 18.sp,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
 ) {

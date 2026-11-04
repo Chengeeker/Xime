@@ -1,0 +1,36 @@
+# Optional cell dictionaries for Xime Frost Pinyin.
+---
+name: rime_frost_cells
+version: "2026-10-13"
+import_tables:
+  - rime_frost_data/cn_dicts/8105
+  - rime_frost_data/cn_dicts/41448
+  - rime_frost_data/cn_dicts/GB18030-2022
+  - rime_frost_data/cn_dicts/base
+  - rime_frost_data/cn_dicts/ext
+  - rime_frost_data/cn_dicts/others
+  - rime_frost_data/cn_dicts/corrections
+  - rime_frost_data/cn_dicts_cell/animal
+  - rime_frost_data/cn_dicts_cell/chess
+  - rime_frost_data/cn_dicts_cell/chess2
+  - rime_frost_data/cn_dicts_cell/composite
+  - rime_frost_data/cn_dicts_cell/computer
+  - rime_frost_data/cn_dicts_cell/exthot
+  - rime_frost_data/cn_dicts_cell/food
+  - rime_frost_data/cn_dicts_cell/game
+  - rime_frost_data/cn_dicts_cell/geography
+  - rime_frost_data/cn_dicts_cell/history
+  - rime_frost_data/cn_dicts_cell/idiom
+  - rime_frost_data/cn_dicts_cell/industry_product
+  - rime_frost_data/cn_dicts_cell/inputmethod
+  - rime_frost_data/cn_dicts_cell/literature
+  - rime_frost_data/cn_dicts_cell/luna
+  - rime_frost_data/cn_dicts_cell/media
+  - rime_frost_data/cn_dicts_cell/medication
+  - rime_frost_data/cn_dicts_cell/music
+  - rime_frost_data/cn_dicts_cell/name
+  - rime_frost_data/cn_dicts_cell/name2
+  - rime_frost_data/cn_dicts_cell/place
+  - rime_frost_data/cn_dicts_cell/shulihua
+  - rime_frost_data/cn_dicts_cell/sport
+...

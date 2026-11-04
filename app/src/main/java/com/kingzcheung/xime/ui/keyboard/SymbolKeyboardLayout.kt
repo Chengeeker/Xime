@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -46,6 +47,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.snap
 import com.kingzcheung.xime.data.RecentUsageStore
 import com.kingzcheung.xime.settings.KeysConfigHelper
 import com.kingzcheung.xime.ui.isTablet
@@ -66,8 +68,6 @@ fun SymbolKeyboardLayout(
     specialKeyTextColor: Color = textColor,
     bottomPaddingDp: Int = 0,
     modifier: Modifier = Modifier,
-    /** 分类 tab 切换与返回按钮的振动钩子（符号点击/删除经 onSelect 由调用方统一振动）。 */
-    onHapticFeedback: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val isTablet = isTablet()
@@ -125,10 +125,7 @@ fun SymbolKeyboardLayout(
                     .size(28.dp)
                     .clip(CircleShape)
                     .background(iconButtonContainer)
-                    .tolerantClick {
-                        onHapticFeedback?.invoke()
-                        onBack()
-                    },
+                    .tolerantClick { onBack() },
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -149,6 +146,7 @@ fun SymbolKeyboardLayout(
         ) {
             HorizontalPager(
                 state = pagerState,
+                flingBehavior = PagerDefaults.flingBehavior(pagerState, snapAnimationSpec = snap()),
                 modifier = Modifier.fillMaxSize()
             ) { page ->
                 val category = displayCategories[page]
@@ -221,10 +219,7 @@ fun SymbolKeyboardLayout(
                     SymbolCategoryTab(
                         name = localizeData(category.name),
                         isSelected = index == pagerState.currentPage,
-                        onClick = {
-                            onHapticFeedback?.invoke()
-                            scope.launch { pagerState.animateScrollToPage(index) }
-                        },
+                        onClick = { scope.launch { pagerState.scrollToPage(index) } },
                         backgroundColor = backgroundColor,
                         textColor = textColor,
                         selectedBackgroundColor = accentColor

@@ -3,6 +3,8 @@ package com.kingzcheung.xime.ui.settings
 object SettingsRoutes {
     const val Main = "main"
     const val Schema = "schema"
+    const val Input = "input"
+    const val Passwords = "passwords"
     const val Market = "market"
     const val MarketModel = "market_model"
     const val MarketPlugins = "market_plugins"
@@ -16,7 +18,9 @@ object SettingsRoutes {
     const val Theme = "theme"
     const val KeyEffect = "key_effect"
     const val LayoutDisplay = "layout_display"
+    const val Toolbar = "toolbar"
     const val Dictionary = "dictionary"
+    const val DictionaryPacks = "dictionary_packs"
     const val DictionaryUserDict = "dictionary_user_dict"
     const val DictionaryCustomPhrase = "dictionary_custom_phrase"
     const val Plugins = "plugins"

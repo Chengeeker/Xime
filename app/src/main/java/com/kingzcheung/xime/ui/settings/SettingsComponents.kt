@@ -1,9 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
-
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -69,13 +70,13 @@ fun SettingsSection(
     Column(modifier = modifier) {
         Text(
             text = title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp)
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         Surface(
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.surfaceContainerLow,
             shadowElevation = 0.dp
         ) {
@@ -98,34 +99,20 @@ fun SettingsItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // 图标圆角背景
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -170,34 +157,20 @@ fun SettingsToggleItem(
                 if (onClick != null) Modifier.clickable(onClick = onClick)
                 else Modifier.clickable { onCheckedChange(!checked) }
             )
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Box(
-            modifier = Modifier
-                .size(40.dp)
-                .clip(RoundedCornerShape(10.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(22.dp)
-            )
-        }
+        Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.width(16.dp))
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -210,7 +183,7 @@ fun SettingsToggleItem(
         }
         Switch(
             checked = checked,
-            onCheckedChange = onCheckedChange,
+            onCheckedChange = hapticToggle(onCheckedChange),
             colors = SwitchDefaults.colors(
                 checkedThumbColor = MaterialTheme.colorScheme.primary,
                 checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -242,37 +215,22 @@ fun SettingsRadioItem(
         modifier = Modifier
             .fillMaxWidth()
             .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (icon != null) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(22.dp)
-                )
-            }
+            Icon(icon, null, Modifier.size(24.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
             Spacer(modifier = Modifier.width(16.dp))
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
-                color = if (selected) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.onSurface
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -317,7 +275,7 @@ fun SettingsSingleChoiceDialog(
         },
         confirmButton = {},
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text(tr(R.string.s_quxiao)) }
+            TextButton(onClick = hapticAction(onDismiss)) { Text("取消") }
         }
     )
 }
@@ -385,7 +343,7 @@ fun SchemaItem(
 
         if (!isDownloaded) {
             OutlinedButton(
-                onClick = onDownload,
+                onClick = hapticAction(onDownload),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(50)
             ) {
@@ -409,7 +367,7 @@ fun SchemaItem(
                 Spacer(modifier = Modifier.width(8.dp))
             }
             OutlinedButton(
-                onClick = onUpdate,
+                onClick = hapticAction(onUpdate),
                 enabled = !isLoading,
                 shape = RoundedCornerShape(50)
             ) {
@@ -456,14 +414,14 @@ fun SchemaSelectDialog(
                     ) {
                         RadioButton(
                             selected = schema.schemaId == currentSchema,
-                            onClick = {
+                            onClick = hapticAction(RadioButton@ {
                                 if (currentSchema != schema.schemaId) {
                                     onSchemaSelected(schema.schemaId)
                                     onDismiss()
                                 } else {
                                     onDismiss()
                                 }
-                            }
+                            })
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Column {
@@ -479,8 +437,8 @@ fun SchemaSelectDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(tr(R.string.s_queding))
+            TextButton(onClick = hapticAction(onDismiss)) {
+                Text("确定")
             }
         }
     )
@@ -524,7 +482,7 @@ fun ThemeCard(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
             shadowElevation = 0.dp,
-            onClick = onClick
+            onClick = hapticAction(onClick)
         ) {
             Column(
                 modifier = Modifier
@@ -718,7 +676,7 @@ fun CodeDisplayCard(
                 shape = RoundedCornerShape(12.dp),
                 color = MaterialTheme.colorScheme.surface,
                 shadowElevation = 0.dp,
-                onClick = onClick
+                onClick = hapticAction(onClick)
             ) {
                 Column(
                     modifier = Modifier
@@ -1046,7 +1004,7 @@ fun KeyboardThemeCard(
             shape = RoundedCornerShape(12.dp),
             color = MaterialTheme.colorScheme.surfaceContainer,
             shadowElevation = 0.dp,
-            onClick = onClick
+            onClick = hapticAction(onClick)
         ) {
             Box(
                 modifier = Modifier

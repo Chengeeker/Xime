@@ -105,7 +105,7 @@ color_schemes:
   # 仅 Android 12+（API 31+）生效，低版本不显示此方案。
   # dynamic_color: true 时忽略静态颜色字段；style.color_scheme 可用 dynamic 引用。
   dynamic:
-    name: "动态配色"
+    name: "动态取色"
     dynamic_color: true
 
   lavender_purple:
@@ -485,16 +485,16 @@ keyboard:
     candidate_text_color_dark: 0xE8EAED
   
   # ── 按键配置（可选，不设置则使用默认值）──
-  # corner_radius:      按键圆角半径（dp，默认 8），独立于 shadow.shape_radius
-  # spacing_x:          按键横向间距（dp，默认 2），未设置时各键盘使用自身默认值
+  # corner_radius:      按键圆角半径（dp，默认 6），独立于 shadow.shape_radius
+  # spacing_x:          按键横向间距（dp，默认 3），未设置时各键盘使用自身默认值
   # spacing_y:          按键竖向间距（dp，默认 4.25；横屏默认 2），未设置时各键盘使用自身默认值
   # 各键盘可单独覆盖圆角与间距（可选），键盘名：qwerty / t9 / number / stroke / symbol
   # （handwriting 手写键盘的键面尺寸写在代码里，圆角同样认 handwriting 这个名字）；
   # 平板设备档另可写 <键盘名>_tablet（平板上覆盖同名基础覆盖，见下方示例）。
   # 例如：t9: { corner_radius: 8, spacing_x: 1, spacing_y: 2 }
   key:
-    corner_radius: 8
-    spacing_x: 2
+    corner_radius: 6
+    spacing_x: 3
     spacing_y: 4.25
     t9: { spacing_x: 2, spacing_y: 2 }
     number: { spacing_x: 2, spacing_y: 2 }
@@ -515,7 +515,7 @@ keyboard:
   # enabled:            是否启用阴影
   # elevation:          阴影高度（dp，默认 0.5）
   shadow:
-    enabled: true
+    enabled: false
     elevation: 0.5
 
   # ── 字体配置（可选，配置为空时使用系统默认字体）──

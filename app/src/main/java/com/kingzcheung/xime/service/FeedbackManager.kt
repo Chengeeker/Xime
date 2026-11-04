@@ -18,10 +18,19 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 
+internal fun shouldEmitKeyHaptic(keyUp: Boolean, hapticOnKeyUp: Boolean): Boolean =
+    keyUp == hapticOnKeyUp
+
 enum class HapticMode(val value: String) {
     FollowingSystem("following_system"),
     Enabled("enabled"),
-    Disabled("disabled");
+    Disabled("disabled"),
+    None("none"),
+    Weak("weak"),
+    Slight("slight"),
+    Medium("medium"),
+    Stronger("stronger"),
+    Strong("strong");
 
     companion object {
         fun fromValue(value: String): HapticMode =
@@ -132,9 +141,10 @@ class FeedbackManager(private val context: Context) {
     }
 
     fun hapticFeedback(view: View, longPress: Boolean = false, keyUp: Boolean = false) {
+        if (hapticMode == HapticMode.None || hapticMode == HapticMode.Disabled) return
         when (hapticMode) {
             HapticMode.Enabled -> {}
-            HapticMode.Disabled -> return
+            HapticMode.Disabled, HapticMode.None -> return
             HapticMode.FollowingSystem -> {
                 val systemEnabled = try {
                     Settings.System.getInt(
@@ -147,11 +157,33 @@ class FeedbackManager(private val context: Context) {
                 }
                 if (!systemEnabled) return
             }
+            else -> {}
         }
-        if (keyUp && !hapticOnKeyUp) return
+        if (!shouldEmitKeyHaptic(keyUp, hapticOnKeyUp)) return
 
         val duration = if (longPress) longPressDuration else pressDuration
         val amplitude = if (longPress) longPressAmplitude else pressAmplitude
+        val strength = when (hapticMode) {
+            HapticMode.Weak -> 35
+            HapticMode.Slight -> 75
+            HapticMode.Medium -> 125
+            HapticMode.Stronger -> 185
+            HapticMode.Strong -> 255
+            else -> 0
+        }
+        if (strength > 0) {
+            val presetDuration = (10 + strength / 16 + if (longPress) 4 else 0).toLong()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createOneShot(
+                    presetDuration,
+                    if (hasAmplitudeControl) strength else VibrationEffect.DEFAULT_AMPLITUDE
+                ))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(presetDuration)
+            }
+            return
+        }
         val hfc: Int = if (longPress) {
             HapticFeedbackConstants.LONG_PRESS
         } else if (keyUp && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
@@ -196,7 +228,7 @@ class FeedbackManager(private val context: Context) {
     }
 
     fun performVibration() {
-        if (hapticMode == HapticMode.Disabled) return
+        if (hapticMode == HapticMode.Disabled || hapticMode == HapticMode.None) return
         if (!vibrator.hasVibrator()) return
         val duration = if (pressDuration != 0L) pressDuration else 20L
         val amplitude = if (hasAmplitudeControl && pressAmplitude != 0) pressAmplitude else VibrationEffect.DEFAULT_AMPLITUDE

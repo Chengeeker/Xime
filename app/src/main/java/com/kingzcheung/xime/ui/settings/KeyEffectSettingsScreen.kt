@@ -1,10 +1,13 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -54,7 +57,7 @@ fun KeyEffectSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_anjianxiaoguo)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -97,7 +100,7 @@ fun KeyEffectSettingsContent(
                         }
                         Switch(
                             checked = uiState.soundEnabled,
-                            onCheckedChange = { viewModel.setSoundEnabled(it) }
+                            onCheckedChange = hapticToggle(Switch@ { viewModel.setSoundEnabled(it) })
                         )
                     }
 
@@ -127,7 +130,7 @@ fun KeyEffectSettingsContent(
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Slider(
+                            HapticStepSlider(
                                 value = uiState.soundVolume.toFloat(),
                                 onValueChange = { viewModel.setSoundVolume(it.toInt()) },
                                 valueRange = 0f..100f,
@@ -147,23 +150,28 @@ fun KeyEffectSettingsContent(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = tr(R.string.s_xuanzeshifougensuixitongshezhi),
+                            text = "选择触感反馈强度",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             listOf(
-                                "following_system" to tr(R.string.s_gensuixitong),
-                                "enabled" to tr(R.string.s_qiyong),
-                                "disabled" to tr(R.string.s_guanbi)
+                                "none" to "无",
+                                "following_system" to "跟随系统",
+                                "weak" to "弱",
+                                "slight" to "较弱",
+                                "medium" to "适中",
+                                "stronger" to "较强",
+                                "strong" to "强",
+                                "enabled" to "自定义"
                             ).forEach { (value, label) ->
                                 FilterChip(
-                                    selected = uiState.hapticMode == value,
-                                    onClick = { viewModel.setHapticMode(value) },
+                                    selected = uiState.hapticMode == value || (value == "none" && uiState.hapticMode == "disabled"),
+                                    onClick = hapticAction(FilterChip@ { viewModel.setHapticMode(value) }),
                                     label = { Text(label) },
                                     colors = FilterChipDefaults.filterChipColors(
                                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -174,7 +182,7 @@ fun KeyEffectSettingsContent(
                         }
                     }
 
-                    if (uiState.hapticMode != "disabled") {
+                    if (uiState.hapticMode != "disabled" && uiState.hapticMode != "none") {
                         HorizontalDivider(
                             modifier = Modifier.padding(start = 16.dp),
                             thickness = 0.5.dp,
@@ -200,7 +208,7 @@ fun KeyEffectSettingsContent(
                             }
                             Switch(
                                 checked = uiState.hapticOnKeyUp,
-                                onCheckedChange = { viewModel.setHapticOnKeyUp(it) }
+                                onCheckedChange = hapticToggle(Switch@ { viewModel.setHapticOnKeyUp(it) })
                             )
                         }
                     }
@@ -229,7 +237,7 @@ fun KeyEffectSettingsContent(
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Slider(
+                            HapticStepSlider(
                                 value = uiState.pressDuration.toFloat(),
                                 onValueChange = { viewModel.setPressDuration(it.toInt()) },
                                 valueRange = 0f..100f,
@@ -260,7 +268,7 @@ fun KeyEffectSettingsContent(
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
-                            Slider(
+                            HapticStepSlider(
                                 value = uiState.longPressDuration.toFloat(),
                                 onValueChange = { viewModel.setLongPressDuration(it.toInt()) },
                                 valueRange = 0f..100f,
@@ -292,7 +300,7 @@ fun KeyEffectSettingsContent(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Slider(
+                                HapticStepSlider(
                                     value = uiState.pressAmplitude.toFloat(),
                                     onValueChange = { viewModel.setPressAmplitude(it.toInt()) },
                                     valueRange = 0f..255f,
@@ -323,7 +331,7 @@ fun KeyEffectSettingsContent(
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Slider(
+                                HapticStepSlider(
                                     value = uiState.longPressAmplitude.toFloat(),
                                     onValueChange = { viewModel.setLongPressAmplitude(it.toInt()) },
                                     valueRange = 0f..255f,

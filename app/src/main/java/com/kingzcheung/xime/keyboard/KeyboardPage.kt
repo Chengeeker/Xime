@@ -36,5 +36,6 @@ sealed interface OverlayRoute {
     data object Symbol : OverlayRoute
     data object Emoji : OverlayRoute
     data object Edit : OverlayRoute
+    data object Passwords : OverlayRoute
     data object ToolPanel : OverlayRoute
 }

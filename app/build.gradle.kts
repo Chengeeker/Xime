@@ -1,4 +1,5 @@
 import com.android.build.gradle.internal.api.BaseVariantOutputImpl
+import org.gradle.api.tasks.bundling.Zip
 import java.util.Base64
 import java.util.Properties
 
@@ -57,10 +58,6 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        // NDK 配置
-        ndk {
-            abiFilters += listOf("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-        }
 
         // 构建信息
         buildConfigField("String", "GIT_HASH", "\"${getGitHash()}\"")
@@ -160,8 +157,8 @@ android {
         abi {
             isEnable = true
             reset()
-            include("armeabi-v7a", "arm64-v8a", "x86", "x86_64")
-            isUniversalApk = true
+            include("arm64-v8a")
+            isUniversalApk = false
         }
     }
 }
@@ -217,6 +214,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation("androidx.work:work-runtime-ktx:2.11.2")
 
     // SavedState
     implementation(libs.androidx.savedstate)
@@ -236,6 +234,8 @@ dependencies {
 
     // Autofill inline suggestions (API 30+)
     implementation(libs.androidx.autofill)
+    implementation("androidx.credentials:credentials:1.6.0")
+    implementation("com.lambdapioneer.argon2kt:argon2kt:1.6.0")
 
     // exp4j for calculator expression evaluation
     implementation(libs.exp4j)
@@ -276,6 +276,16 @@ dependencies {
     androidTestImplementation("androidx.test:runner:1.7.0")
     androidTestImplementation("androidx.test:rules:1.7.0")
     androidTestImplementation("androidx.concurrent:concurrent-futures:1.2.0")
+}
+
+tasks.register<Zip>("packageFrostCellDictionaries") {
+    group = "distribution"
+    description = "Packages optional Frost cell dictionaries for manual import into Xime."
+    archiveFileName.set("Xime-Frost-Cell-Dictionaries.zip")
+    destinationDirectory.set(layout.buildDirectory.dir("outputs/optional-components"))
+    isReproducibleFileOrder = true
+    isPreserveFileTimestamps = false
+    from(layout.projectDirectory.dir("optional/rime-frost-cells"))
 }
 
 // Align concurrent-futures version: espresso 3.7.0 requires 1.2.0

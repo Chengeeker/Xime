@@ -296,6 +296,13 @@ object BackupManager {
                         val data = zis.readBytes()
                         when {
                             rel == "settings.json" -> prefsRestorer(PREFS_NAME_SETTINGS, data)
+                            rel == "dictionary_updates.json" -> prefsRestorer("xime_dictionary_updates", data)
+                            rel.startsWith("dictionary-packs/") -> {
+                                val path = rel.removePrefix("dictionary-packs/")
+                                require(path.matches(Regex("(?:installed\\.json|sources/[a-f0-9]{64}\\.dict\\.yaml|notices/[a-f0-9]{64}\\.json)"))) { "非法词库备份元数据路径" }
+                                val base = File(filesDir, "dictionary-packs")
+                                writeChecked(File(base, path), base, data)
+                            }
                             rel.startsWith("plugin_configs/") && rel.endsWith(".json") -> {
                                 val pluginId = rel.removePrefix("plugin_configs/").removeSuffix(".json")
                                 if (isSafeId(pluginId)) {
@@ -324,7 +331,11 @@ object BackupManager {
                     val target = File(rimeDir, name)
                     // 显式拒绝绝对路径（File(parent, "/abs") 在 Unix 下会被拼接为 parent/abs，
                     // canonical 检查拦不住；此处按契约直接拒绝）
-                    if (File(name).isAbsolute) {
+                    // ZIP 路径跨平台，File.isAbsolute 只按当前宿主判断根路径。
+                    val hasWindowsDriveRoot = name.length >= 3 &&
+                        name[0].lowercaseChar() in 'a'..'z' && name[1] == ':' &&
+                        (name[2] == '/' || name[2] == '\\')
+                    if (File(name).isAbsolute || name.startsWith('/') || name.startsWith('\\') || hasWindowsDriveRoot) {
                         return Result.failure(Exception(tr(R.string.s_beifenbaobaohanfeifalujing, name)))
                     }
                     val canonicalRoot = rimeDir.canonicalPath + File.separator
@@ -441,6 +452,9 @@ object BackupManager {
         val entries = mutableListOf<Pair<String, ByteArray>>()
         val settingsPrefs = context.getSharedPreferences(PREFS_NAME_SETTINGS, Context.MODE_PRIVATE)
         entries += (META_PREFIX + "settings.json") to prefsToJson(settingsPrefs).toByteArray(Charsets.UTF_8)
+        entries += (META_PREFIX + "dictionary_updates.json") to prefsToJson(
+            context.getSharedPreferences("xime_dictionary_updates", Context.MODE_PRIVATE)
+        ).toByteArray(Charsets.UTF_8)
 
         val sharedPrefsDir = File(context.filesDir.parentFile, "shared_prefs")
         sharedPrefsDir.listFiles()

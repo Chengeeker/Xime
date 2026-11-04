@@ -264,4 +264,13 @@ class KeyboardGestureActionDispatchTest {
         assertTrue(t9DigitTapRebinds(KeyAction(action = GestureAction.COPY, label = "复制")))
         assertTrue(t9DigitTapRebinds(KeyAction(action = GestureAction.SEND_RIME, value = "abc")))
     }
+
+    @Test
+    fun `上滑输入设置仅限制提交数字和符号的动作`() {
+        assertFalse(isSwipeValueAllowed("off", GestureAction.COMMIT, "1"))
+        assertFalse(isSwipeValueAllowed("numbers_only", GestureAction.COMMIT, "/"))
+        assertTrue(isSwipeValueAllowed("numbers_only", GestureAction.COMMIT, "0"))
+        assertTrue(isSwipeValueAllowed("numbers_symbols", GestureAction.COMMIT, "!"))
+        assertTrue(isSwipeValueAllowed("off", GestureAction.DELETE, ""))
+    }
 }

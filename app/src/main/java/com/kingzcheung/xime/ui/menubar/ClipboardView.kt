@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.animation.core.snap
 import coil.compose.AsyncImage
 import com.kingzcheung.xime.R
 import com.kingzcheung.xime.clipboard.ClipboardDragSender
@@ -288,7 +290,7 @@ fun ClipboardView(
         )
 
         LaunchedEffect(selectedTab) {
-            pagerState.animateScrollToPage(selectedTab)
+            pagerState.scrollToPage(selectedTab)
         }
 
         LaunchedEffect(pagerState.currentPage) {
@@ -299,6 +301,7 @@ fun ClipboardView(
 
         HorizontalPager(
             state = pagerState,
+            flingBehavior = PagerDefaults.flingBehavior(pagerState, snapAnimationSpec = snap()),
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()

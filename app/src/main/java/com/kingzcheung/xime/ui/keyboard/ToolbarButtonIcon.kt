@@ -42,7 +42,7 @@ fun ToolbarButtonIcon(
                 icon?.assetName != null -> AsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(icon.assetName)
-                        .crossfade(true)
+                        .crossfade(false)
                         .build(),
                     contentDescription = contentDescription ?: item.label,
                     modifier = modifier,

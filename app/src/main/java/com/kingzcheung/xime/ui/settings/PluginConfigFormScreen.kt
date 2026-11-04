@@ -1,8 +1,11 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticTapFeedback
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
@@ -147,7 +150,7 @@ fun PluginConfigFormScreen(
     @Composable
     fun saveButton() {
         Button(
-            onClick = {
+            onClick = hapticAction(Button@ {
                 var allValid = true
                 fields.forEach { field ->
                     if (field.type == UiNodeType.SECRET && field.required && field.key != null) {
@@ -162,7 +165,7 @@ fun PluginConfigFormScreen(
                 autoAuthorizeConfiguredHosts()
                 Toast.makeText(context, tr(R.string.s_peizhiyibaocun), Toast.LENGTH_SHORT).show()
                 if (!embedded) onBack()
-            },
+            }),
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -191,7 +194,7 @@ fun PluginConfigFormScreen(
                 TopAppBar(
                     title = { Text(pluginName) },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(onClick = hapticAction(onBack)) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = tr(R.string.s_fanhui)
@@ -266,7 +269,7 @@ private fun UiNodeEditor(
                 minLines = 4,
                 maxLines = 8,
                 supportingText = field.helpText?.let { { Text(it) } },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -292,7 +295,7 @@ private fun UiNodeEditor(
                     KeyboardOptions.Default
                 },
                 supportingText = field.helpText?.let { { Text(it) } },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -317,7 +320,7 @@ private fun UiNodeEditor(
                     PasswordVisualTransformation()
                 },
                 trailingIcon = {
-                    IconButton(onClick = { showSecret = !showSecret }) {
+                    IconButton(onClick = hapticAction(IconButton@ { showSecret = !showSecret })) {
                         Icon(
                             imageVector = if (showSecret) Icons.Default.VisibilityOff else Icons.Default.Visibility,
                             contentDescription = if (showSecret) tr(R.string.s_yincang) else tr(R.string.s_xianshi)
@@ -326,7 +329,7 @@ private fun UiNodeEditor(
                 },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 supportingText = field.helpText?.let { { Text(it) } },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = (Modifier.fillMaxWidth()).hapticTapFeedback(),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -356,10 +359,10 @@ private fun UiNodeEditor(
                 }
                 Switch(
                     checked = value == "true",
-                    onCheckedChange = {
+                    onCheckedChange = hapticToggle(Switch@ {
                         value = it.toString()
                         persist()
-                    },
+                    }),
                     colors = SwitchDefaults.colors(
                         checkedThumbColor = MaterialTheme.colorScheme.primary,
                         checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -385,9 +388,9 @@ private fun UiNodeEditor(
                         { { Text(tr(R.string.s_zanwukeyongxuanxiang)) } }
                     else
                         field.helpText?.let { { Text(it) } },
-                    modifier = Modifier
+                    modifier = (Modifier
                         .fillMaxWidth()
-                        .menuAnchor(),
+                        .menuAnchor()).hapticTapFeedback(),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
@@ -401,11 +404,11 @@ private fun UiNodeEditor(
                     options.forEach { option ->
                         DropdownMenuItem(
                             text = { Text(option) },
-                            onClick = {
+                            onClick = hapticAction(DropdownMenuItem@ {
                                 value = option
                                 persist()
                                 expanded = false
-                            }
+                            })
                         )
                     }
                 }
@@ -440,7 +443,7 @@ private fun UiNodeEditor(
                         options.forEach { option ->
                             FilterChip(
                                 selected = option in selected,
-                                onClick = {
+                                onClick = hapticAction(FilterChip@ {
                                     val next = if (option in selected) {
                                         selected - option
                                     } else {
@@ -448,7 +451,7 @@ private fun UiNodeEditor(
                                     }
                                     value = next.sorted().joinToString(",")
                                     persist()
-                                },
+                                }),
                                 label = { Text(option) }
                             )
                         }
@@ -459,7 +462,7 @@ private fun UiNodeEditor(
 
         UiNodeType.BUTTON -> {
             Button(
-                onClick = {
+                onClick = hapticAction(Button@ {
                     val action = key
                     if (action.isNullOrBlank()) {
                         Toast.makeText(context, tr(R.string.s_weipeizhidongzuo), Toast.LENGTH_SHORT).show()
@@ -486,7 +489,7 @@ private fun UiNodeEditor(
                             Toast.makeText(context, error, Toast.LENGTH_LONG).show()
                         }
                     }
-                },
+                }),
                 enabled = !buttonBusy,
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(

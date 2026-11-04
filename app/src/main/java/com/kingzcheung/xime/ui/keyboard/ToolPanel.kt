@@ -1,8 +1,8 @@
 package com.kingzcheung.xime.ui.keyboard
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+
 
 import android.graphics.drawable.GradientDrawable
 import android.view.Gravity

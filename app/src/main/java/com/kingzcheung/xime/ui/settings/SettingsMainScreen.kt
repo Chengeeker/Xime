@@ -43,6 +43,7 @@ import androidx.compose.material.icons.twotone.ToggleOn
 import androidx.compose.material.icons.twotone.Translate
 import androidx.compose.material.icons.twotone.TypeSpecimen
 import androidx.compose.material.icons.twotone.Vibration
+import androidx.compose.material.icons.twotone.VpnKey
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -82,6 +83,9 @@ fun SettingsMainContent(
     onNavigateToTheme: () -> Unit,
     onNavigateToKeyEffect: () -> Unit,
     onNavigateToLayoutDisplay: () -> Unit,
+    onNavigateToToolbarSettings: () -> Unit = {},
+    onNavigateToInputSettings: () -> Unit = {},
+    onNavigateToPasswordSettings: () -> Unit = {},
     onNavigateToDictionary: () -> Unit,
     onNavigateToPlugins: () -> Unit,
     onNavigateToModelLocal: () -> Unit = {},
@@ -253,6 +257,18 @@ fun SettingsMainContent(
                         onClick = onNavigateToLayoutDisplay,
                         showArrow = true
                     )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.Build,
+                        title = "工具栏按钮",
+                        subtitle = "设置键盘工具栏显示的功能",
+                        onClick = onNavigateToToolbarSettings,
+                        showArrow = true
+                    )
                 })
             }
 
@@ -263,6 +279,18 @@ fun SettingsMainContent(
                         title = tr(R.string.s_shurufangan),
                         subtitle = tr(R.string.s_guanlishurufangan),
                         onClick = onNavigateToSchema,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.KeyboardAlt,
+                        title = "输入方式",
+                        subtitle = "白霜全拼、小鹤双拼与混输",
+                        onClick = onNavigateToInputSettings,
                         showArrow = true
                     )
                     HorizontalDivider(
@@ -314,6 +342,18 @@ fun SettingsMainContent(
                         title = tr(R.string.s_chajianguanli),
                         subtitle = tr(R.string.s_guanliyianzhuangdechajian),
                         onClick = onNavigateToPlugins,
+                        showArrow = true
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 56.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+                    SettingsItem(
+                        icon = Icons.TwoTone.VpnKey,
+                        title = "密码管理",
+                        subtitle = "系统自动填充与 Bitwarden",
+                        onClick = onNavigateToPasswordSettings,
                         showArrow = true
                     )
                 })

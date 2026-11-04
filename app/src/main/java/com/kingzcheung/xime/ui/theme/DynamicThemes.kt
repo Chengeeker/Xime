@@ -35,7 +35,7 @@ object DynamicThemes {
      * 构建动态配色键盘主题（颜色全部来自壁纸调色板）。
      * 不支持（< Android 12）或系统资源缺失时返回 null，调用方跳过该方案。
      */
-    fun create(context: Context, id: String = THEME_ID, name: String = tr(R.string.s_dongtaipeise)): KeyboardColorScheme? {
+    fun create(context: Context, id: String = THEME_ID, name: String = "动态取色"): KeyboardColorScheme? {
         if (!isSupported()) return null
         val p = SystemPalette(context)
         val accentLight = p.accent1(600)

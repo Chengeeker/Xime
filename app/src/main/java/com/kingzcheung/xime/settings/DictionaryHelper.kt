@@ -56,9 +56,25 @@ object DictionaryHelper {
     fun parseImportTables(text: String): List<String> {
         val tables = linkedSetOf<String>()
         val lines = text.lines()
+        fun content(line: String): String {
+            var quote: Char? = null
+            var escaped = false
+            for (index in line.indices) {
+                val char = line[index]
+                if (quote != null) {
+                    if (quote == '"' && escaped) escaped = false
+                    else if (quote == '"' && char == '\\') escaped = true
+                    else if (char == quote) quote = null
+                } else when {
+                    char == '"' || char == '\'' -> quote = char
+                    char == '#' && (index == 0 || line[index - 1].isWhitespace()) -> return line.substring(0, index).trim()
+                }
+            }
+            return line.trim()
+        }
         var i = 0
         while (i < lines.size) {
-            val line = lines[i].trim()
+            val line = content(lines[i])
             if (line == "...") break // 头部结束，后面是词条
             if (line.startsWith("import_tables:")) {
                 val inline = line.substringAfter(":").trim()
@@ -68,8 +84,8 @@ object DictionaryHelper {
                         .forEach { tables.add(it) }
                 } else {
                     var j = i + 1
-                    while (j < lines.size && lines[j].trim().startsWith("- ")) {
-                        tables.add(lines[j].trim().removePrefix("- ").trim().trim('"'))
+                    while (j < lines.size && content(lines[j]).startsWith("- ")) {
+                        tables.add(content(lines[j]).removePrefix("- ").trim().trim('"', '\''))
                         j++
                     }
                     i = j - 1

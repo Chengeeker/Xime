@@ -77,7 +77,7 @@ fun EditKeyboardLayout(
     bottomPaddingDp: Int = 0,
     /** 与主键盘一致的主题按键圆角（LocalKeyCornerRadius），供复用的 KeyButton 读取 */
     keyCornerRadius: Dp = 8.dp,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     modifier: Modifier = Modifier
@@ -213,7 +213,7 @@ private fun CircularDPad(
     textColor: Color,
     accentColor: Color,
     backgroundColor: Color,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     modifier: Modifier = Modifier
 ) {
@@ -406,7 +406,7 @@ private fun SideButtonGrid(
     onAction: (String) -> Unit,
     keyBg: Color,
     textColor: Color,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     modifier: Modifier = Modifier

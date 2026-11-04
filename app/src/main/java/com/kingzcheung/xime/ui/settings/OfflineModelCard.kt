@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -79,10 +80,9 @@ internal fun OfflineModelCard(
     val switchable = installedModels.size > 1
 
     Card(
-        onClick = {
-            // 无已安装模型：点击跳扩展商店下载；否则打开已安装模型选择（与"在线服务"一致的交互）
+        onClick = hapticAction(Card@ {
             if (installedModels.isEmpty()) onNavigateToDownload() else showModelPicker = true
-        },
+        }),
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(

@@ -43,6 +43,15 @@ class DictionaryHelperTest {
     }
 
     @Test
+    fun `parseImportTables strips Frost inline comments`() {
+        val text = "import_tables:\n  - rime_frost_data/cn_dicts/8105     # 字表\n  - rime_frost_data/cn_dicts/base # 基础词库\n...\n"
+        assertEquals(
+            listOf("rime_frost_data/cn_dicts/8105", "rime_frost_data/cn_dicts/base"),
+            DictionaryHelper.parseImportTables(text),
+        )
+    }
+
+    @Test
     fun `parseImportTables inline form`() {
         assertEquals(
             listOf("a", "b", "c"),

@@ -1,8 +1,11 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.CubicBezierEasing
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -23,6 +26,7 @@ fun SettingsScreen(
     val startDestination = if (initialRoute == "manage_dict") SettingsRoutes.Dictionary
     else if (initialRoute == "schema") SettingsRoutes.Schema
     else if (initialRoute == "plugins") SettingsRoutes.Plugins
+    else if (initialRoute == "passwords") SettingsRoutes.Passwords
     else SettingsRoutes.Main
 
     LaunchedEffect(initialPluginId) {
@@ -33,7 +37,21 @@ fun SettingsScreen(
     
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = startDestination,
+        enterTransition = {
+            slideIntoContainer(
+                towards = androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.Start,
+                animationSpec = tween(320, easing = CubicBezierEasing(.215f, .61f, .355f, 1f)),
+            )
+        },
+        exitTransition = { ExitTransition.None },
+        popEnterTransition = { EnterTransition.None },
+        popExitTransition = {
+            slideOutOfContainer(
+                towards = androidx.compose.animation.AnimatedContentTransitionScope.SlideDirection.End,
+                animationSpec = tween(220, easing = CubicBezierEasing(.55f, .055f, .675f, .19f)),
+            )
+        },
     ) {
         composable(SettingsRoutes.Main) {
             SettingsMainContent(
@@ -42,6 +60,7 @@ fun SettingsScreen(
                 onNavigateToTheme = { navController.navigate(SettingsRoutes.Theme) },
                 onNavigateToKeyEffect = { navController.navigate(SettingsRoutes.KeyEffect) },
                 onNavigateToLayoutDisplay = { navController.navigate(SettingsRoutes.LayoutDisplay) },
+                onNavigateToToolbarSettings = { navController.navigate(SettingsRoutes.Toolbar) },
                 onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
                 onNavigateToPlugins = { navController.navigate(SettingsRoutes.Plugins) },
                 onNavigateToModelLocal = { navController.navigate(SettingsRoutes.ModelLocal) },
@@ -51,8 +70,21 @@ fun SettingsScreen(
                 onNavigateToSpeechToText = { navController.navigate(SettingsRoutes.SpeechToText) },
                 onNavigateToAbout = { navController.navigate(SettingsRoutes.About) },
                 onNavigateToClipboard = { navController.navigate(SettingsRoutes.Clipboard) },
-                onNavigateToBackup = { navController.navigate(SettingsRoutes.Backup) }
+                onNavigateToBackup = { navController.navigate(SettingsRoutes.Backup) },
+                onNavigateToInputSettings = { navController.navigate(SettingsRoutes.Input) },
+                onNavigateToPasswordSettings = { navController.navigate(SettingsRoutes.Passwords) },
             )
+        }
+        composable(SettingsRoutes.Input) {
+            InputSettingsContent(
+                onBack = { navController.popBackStack() },
+                onNavigateToSchemas = { navController.navigate(SettingsRoutes.Schema) },
+                onNavigateToDictionary = { navController.navigate(SettingsRoutes.Dictionary) },
+                onNavigateToCandidateSettings = { navController.navigate(SettingsRoutes.LayoutDisplay) },
+            )
+        }
+        composable(SettingsRoutes.Passwords) {
+            PasswordSettingsContent(onBack = { navController.popBackStack() })
         }
         composable(SettingsRoutes.Schema) {
             SchemaSettingsContent(
@@ -184,6 +216,9 @@ fun SettingsScreen(
                 onNavigateToMarket = { navController.navigate(SettingsRoutes.MarketLayouts) },
             )
         }
+        composable(SettingsRoutes.Toolbar) {
+            ToolbarSettingsContent(onBack = { navController.popBackStack() })
+        }
         composable(SettingsRoutes.SmartPrediction) {
             SmartPredictionSettingsContent(
                 onBack = { navController.popBackStack() },
@@ -215,6 +250,7 @@ fun SettingsScreen(
         }
         composable(SettingsRoutes.Dictionary) {
             DictionaryHubContent(
+                onNavigateToPacks = { navController.navigate(SettingsRoutes.DictionaryPacks) },
                 onNavigateToUserDict = { navController.navigate(SettingsRoutes.DictionaryUserDict) },
                 onNavigateToCustomPhrase = { navController.navigate(SettingsRoutes.DictionaryCustomPhrase) },
                 onBack = { navController.popBackStack() }
@@ -222,6 +258,9 @@ fun SettingsScreen(
         }
         composable(SettingsRoutes.DictionaryUserDict) {
             UserDictContent(onBack = { navController.popBackStack() })
+        }
+        composable(SettingsRoutes.DictionaryPacks) {
+            SmartDictionaryContent(onBack = { navController.popBackStack() })
         }
         composable(SettingsRoutes.DictionaryCustomPhrase) {
             CustomPhraseSettingsContent(onBack = { navController.popBackStack() })

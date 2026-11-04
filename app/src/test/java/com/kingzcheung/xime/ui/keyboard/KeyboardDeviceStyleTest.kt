@@ -3,6 +3,7 @@ package com.kingzcheung.xime.ui.keyboard
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.kingzcheung.xime.settings.KeyboardKeyConfig
+import com.kingzcheung.xime.settings.KeyboardShadowConfig
 import com.kingzcheung.xime.settings.KeyboardSpacingConfig
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -25,6 +26,12 @@ class KeyboardDeviceStyleTest {
         cornerRadius = 8,
         spacingOverrides = mapOf("symbol" to KeyboardSpacingConfig(cornerRadius = 10)),
     )
+
+    @Test
+    fun `默认键面为平面样式并使用紧凑圆角`() {
+        assertEquals(6, KeyboardKeyConfig().cornerRadius)
+        assertFalse(KeyboardShadowConfig().enabled)
+    }
 
     // ── 圆角 ──────────────────────────────────────────────
 
@@ -60,7 +67,7 @@ class KeyboardDeviceStyleTest {
     fun `overlay 面板（全量符号与表情）圆角同样按设备档`() {
         // 这两块没有 xime.yaml 段，按全局值 + 平板大键面档，与 26 键/面板同观感
         val plain = KeyboardKeyConfig()
-        assertEquals(8.dp, overlayKeyCornerRadius(plain, isTablet = false))
+        assertEquals(6.dp, overlayKeyCornerRadius(plain, isTablet = false))
         assertEquals(14.dp, overlayKeyCornerRadius(plain, isTablet = true))
         assertEquals(
             "同一设备上 overlay 与 26 键圆角一致",
@@ -171,7 +178,7 @@ class KeyboardDeviceStyleTest {
         assertEquals(4f, phone.gapDp, 0.001f)
         assertEquals(16f, phone.fontSizeSp, 0.001f)
         assertEquals(4f, phone.sidePaddingDp, 0.001f)
-        assertEquals(8.dp, phone.keyCornerRadius)
+        assertEquals(6.dp, phone.keyCornerRadius)
 
         val tablet = handwritingChromeFor(
             isTablet = true,

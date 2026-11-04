@@ -156,6 +156,15 @@ object RimeExportManager {
                         zos.closeEntry()
                     }
                     val pluginsDir = File(context.filesDir, "plugins")
+                    val packsDir = File(context.filesDir, "dictionary-packs")
+                    packsDir.walkTopDown().filter(File::isFile).forEach { file ->
+                        val relative = file.relativeTo(packsDir).invariantSeparatorsPath
+                        if (relative.matches(Regex("(?:installed\\.json|sources/[a-f0-9]{64}\\.dict\\.yaml|notices/[a-f0-9]{64}\\.json)"))) {
+                            zos.putNextEntry(ZipEntry(BackupManager.META_PREFIX + "dictionary-packs/" + relative))
+                            file.inputStream().use { it.copyTo(zos) }
+                            zos.closeEntry()
+                        }
+                    }
                     pluginsDir.walkTopDown().forEach { file ->
                         if (file.isDirectory) return@forEach
                         val entryName = BackupManager.META_PREFIX + "plugins/" +

@@ -18,6 +18,18 @@ object SettingsPreferences {
     private const val KEY_DEFAULT_CUSTOM_MIGRATED = "default_custom_schema_list_migrated"
     private const val KEY_SCHEME_SELECTION_MIGRATED = "scheme_selection_v2_migrated"
     private const val KEY_PENDING_DICT_MERGE = "pending_dict_merge"
+    private const val KEY_DEPLOYMENT_DONE = "deployment_done"
+    private const val KEY_DEPLOYMENT_HASH = "deployment_hash"
+    private const val KEY_RIME_ASSETS_VERSION = "rime_assets_version"
+    private const val KEY_RIME_FROST_ASSETS_REVISION = "rime_frost_assets_revision"
+    private const val KEY_NUMBER_LAYOUT = "number_keyboard_layout"
+    private const val KEY_SWIPE_INPUT_MODE = "swipe_input_mode"
+    private const val KEY_EMOJI_KEY_ENABLED = "emoji_key_enabled"
+    private const val KEY_KEY_BUBBLE_ENABLED = "key_bubble_enabled"
+    private const val KEY_INSTALLED_MARKET_IDS = "installed_market_ids"
+    private const val KEY_FROST_SCHEMAS_MERGED = "frost_schemas_merged"
+    private const val KEY_BUILTIN_SCHEMAS_MERGED = "builtin_schemas_merged"
+    private const val KEY_LEGACY_DEFAULT_SCHEMAS_MIGRATED = "legacy_default_schemas_migrated"
     private const val KEY_SETUP_COMPLETED = "setup_completed"
     private const val KEY_DARK_MODE = "dark_mode"
     private const val KEY_VERBOSE_LOGGING = "verbose_logging"
@@ -918,5 +930,95 @@ object SettingsPreferences {
             .remove(KEY_APPLIED_LAYOUT_VERSION)
             .remove(KEY_APPLIED_LAYOUT_FILES)
             .apply()
+    }
+
+    fun getNumberKeyboardLayout(context: Context): String =
+        getPrefs(context).getString(KEY_NUMBER_LAYOUT, "keypad") ?: "keypad"
+
+    fun setNumberKeyboardLayout(context: Context, layout: String) {
+        getPrefs(context).edit().putString(KEY_NUMBER_LAYOUT, layout).apply()
+    }
+
+    fun getSwipeInputMode(context: Context): String =
+        getPrefs(context).getString(KEY_SWIPE_INPUT_MODE, "numbers_symbols") ?: "numbers_symbols"
+
+    fun setSwipeInputMode(context: Context, mode: String) {
+        getPrefs(context).edit().putString(KEY_SWIPE_INPUT_MODE, mode).apply()
+    }
+
+    fun isEmojiKeyEnabled(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_EMOJI_KEY_ENABLED, true)
+
+    fun setEmojiKeyEnabled(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_EMOJI_KEY_ENABLED, enabled).apply()
+    }
+
+    fun isKeyBubbleEnabled(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_KEY_BUBBLE_ENABLED, true)
+
+    fun setKeyBubbleEnabled(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_KEY_BUBBLE_ENABLED, enabled).apply()
+    }
+
+    fun getRimeFrostAssetsRevision(context: Context): String =
+        getPrefs(context).getString(KEY_RIME_FROST_ASSETS_REVISION, "") ?: ""
+
+    fun setRimeFrostAssetsRevision(context: Context, revision: String) {
+        getPrefs(context).edit().putString(KEY_RIME_FROST_ASSETS_REVISION, revision).apply()
+    }
+
+    fun getRimeAssetsVersion(context: Context): Int =
+        getPrefs(context).getInt(KEY_RIME_ASSETS_VERSION, 0)
+
+    fun setRimeAssetsVersion(context: Context, version: Int) {
+        getPrefs(context).edit().putInt(KEY_RIME_ASSETS_VERSION, version).apply()
+    }
+
+    fun getDeploymentHash(context: Context): String =
+        getPrefs(context).getString(KEY_DEPLOYMENT_HASH, "") ?: ""
+
+    fun setDeploymentHash(context: Context, hash: String) {
+        getPrefs(context).edit().putString(KEY_DEPLOYMENT_HASH, hash).apply()
+    }
+
+    fun isDeploymentDone(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_DEPLOYMENT_DONE, false)
+
+    fun setDeploymentDone(context: Context, done: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_DEPLOYMENT_DONE, done).apply()
+    }
+
+    fun getInstalledMarketIds(context: Context): Set<String> =
+        getPrefs(context).getStringSet(KEY_INSTALLED_MARKET_IDS, emptySet())?.toSet() ?: emptySet()
+
+    fun addInstalledMarketId(context: Context, id: String) {
+        val ids = getInstalledMarketIds(context).toMutableSet()
+        if (ids.add(id)) getPrefs(context).edit().putStringSet(KEY_INSTALLED_MARKET_IDS, ids).apply()
+    }
+
+    fun removeInstalledMarketId(context: Context, id: String) {
+        val ids = getInstalledMarketIds(context).toMutableSet()
+        if (ids.remove(id)) getPrefs(context).edit().putStringSet(KEY_INSTALLED_MARKET_IDS, ids).apply()
+    }
+
+    fun isFrostSchemasMerged(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_FROST_SCHEMAS_MERGED, false)
+
+    fun setFrostSchemasMerged(context: Context, merged: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_FROST_SCHEMAS_MERGED, merged).apply()
+    }
+
+    fun isBuiltinSchemasMerged(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_BUILTIN_SCHEMAS_MERGED, false)
+
+    fun setBuiltinSchemasMerged(context: Context, merged: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_BUILTIN_SCHEMAS_MERGED, merged).apply()
+    }
+
+    fun isLegacyDefaultSchemasMigrated(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_LEGACY_DEFAULT_SCHEMAS_MIGRATED, false)
+
+    fun setLegacyDefaultSchemasMigrated(context: Context, migrated: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_LEGACY_DEFAULT_SCHEMAS_MIGRATED, migrated).apply()
     }
 }

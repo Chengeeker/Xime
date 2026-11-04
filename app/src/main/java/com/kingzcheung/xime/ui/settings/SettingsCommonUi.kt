@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -94,7 +95,7 @@ fun RimeSearchField(
             )
             if (query.isNotEmpty()) {
                 Spacer(modifier = Modifier.width(8.dp))
-                IconButton(onClick = { onQueryChange("") }, modifier = Modifier.size(24.dp)) {
+                IconButton(onClick = hapticAction(IconButton@ { onQueryChange("") }), modifier = Modifier.size(24.dp)) {
                     Icon(
                         Icons.Default.Clear,
                         contentDescription = tr(R.string.s_qingchusousuo),

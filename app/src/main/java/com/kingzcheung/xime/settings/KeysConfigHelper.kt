@@ -135,9 +135,9 @@ internal data class QwertyRowsConfig(
  * 键盘阴影配置，从 xime.yaml keyboard.shadow 加载。
  */
 data class KeyboardShadowConfig(
-    val enabled: Boolean = true,
+    val enabled: Boolean = false,
     val elevation: Int = 1,
-    val shapeRadius: Int = 8,
+    val shapeRadius: Int = 6,
 )
 
 /**
@@ -154,7 +154,7 @@ data class KeyboardSpacingConfig(
  * 键盘按键配置，从 xime.yaml keyboard.key 加载。
  */
 data class KeyboardKeyConfig(
-    val cornerRadius: Int = 8,
+    val cornerRadius: Int = 6,
     /** 按键横向间距（dp），未配置时各布局使用自身默认值 */
     val spacingX: Float? = null,
     /** 按键竖向间距（dp），未配置时各布局使用自身默认值 */
@@ -821,7 +821,7 @@ object KeysConfigHelper {
     private var _panelGestureConfigs: Map<String, Map<String, KeyBinding>> = emptyMap()
 
     /** 面板段名清单（数字键盘 / 常用符号键盘；符号面板中英共用一套，无中/英两段）。 */
-    val PANEL_SECTIONS: List<String> = listOf("number", "common_symbols")
+    val PANEL_SECTIONS: List<String> = listOf("number", "number_tablet", "common_symbols")
 
     /** 面板布局：rows 模式（常用符号，行列表）或 columns 模式（数字键盘，左列/中行/右列）。 */
     fun getPanelLayout(section: String): PanelLayoutConfig? = _panelLayouts[section]
@@ -1355,9 +1355,9 @@ object KeysConfigHelper {
     /** 字段级一路 fallback 合并阴影配置：custom → builtIn → 代码默认值。 */
     internal fun mergeShadowConfigs(custom: KeyboardShadowPartial?, builtIn: KeyboardShadowPartial?): KeyboardShadowConfig =
         KeyboardShadowConfig(
-            enabled = tiered(custom?.enabled, builtIn?.enabled, true),
+            enabled = tiered(custom?.enabled, builtIn?.enabled, false),
             elevation = tiered(custom?.elevation, builtIn?.elevation, 1),
-            shapeRadius = tiered(custom?.shapeRadius, builtIn?.shapeRadius, 8),
+            shapeRadius = tiered(custom?.shapeRadius, builtIn?.shapeRadius, 6),
         )
 
     /** 从 YAML 文本中提取 keyboard.shadow 段（仅显式字段非 null）。 */
@@ -1413,7 +1413,7 @@ object KeysConfigHelper {
     /** 字段级一路 fallback 合并按键配置：custom → builtIn → 代码默认值。 */
     internal fun mergeKeyConfigs(custom: KeyboardKeyPartial?, builtIn: KeyboardKeyPartial?): KeyboardKeyConfig =
         KeyboardKeyConfig(
-            cornerRadius = tiered(custom?.cornerRadius, builtIn?.cornerRadius, 8),
+            cornerRadius = tiered(custom?.cornerRadius, builtIn?.cornerRadius, 6),
             spacingX = tiered(custom?.spacingX, builtIn?.spacingX, null),
             spacingY = tiered(custom?.spacingY, builtIn?.spacingY, null),
             spacingOverrides = mergeSpacingOverrides(custom?.spacingOverrides, builtIn?.spacingOverrides),
@@ -1449,7 +1449,7 @@ object KeysConfigHelper {
     internal fun parseKeyboardKeyYamlText(yamlText: String): KeyboardKeyConfig? {
         val partial = parseKeyboardKeyYamlPartial(yamlText) ?: return null
         return KeyboardKeyConfig(
-            cornerRadius = partial.cornerRadius ?: 8,
+            cornerRadius = partial.cornerRadius ?: 6,
             spacingX = partial.spacingX,
             spacingY = partial.spacingY,
             spacingOverrides = partial.spacingOverrides ?: emptyMap(),

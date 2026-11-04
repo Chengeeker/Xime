@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import android.text.format.Formatter
 import androidx.compose.foundation.layout.Arrangement
@@ -29,7 +30,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -104,7 +104,7 @@ fun ClipboardSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_jiantieban)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -200,7 +200,7 @@ fun ClipboardSettingsContent(
                             )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
-                        Slider(
+                        HapticStepSlider(
                             value = maxMb,
                             onValueChange = { maxMb = it },
                             onValueChangeFinished = {

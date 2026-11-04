@@ -25,6 +25,12 @@ object KeyboardResizeBounds {
     /** 底部留白上限（dp）：底边最多抬离屏幕底部这么远。 */
     const val MAX_BOTTOM_PADDING_DP = 120
 
+    fun contentViewportHeightDp(keyboardHeightDp: Int, bottomPaddingDp: Int): Int =
+        keyboardHeightDp + bottomPaddingDp.coerceAtLeast(0)
+
+    fun contentViewportOffsetDp(bottomPaddingDp: Int, bottomInsetDp: Int): Int =
+        -(bottomInsetDp + bottomPaddingDp.coerceAtMost(0))
+
     /** 高度边界 [min, max]（dp）。 */
     fun heightBoundsDp(screenHeightDp: Int, isLandscape: Boolean): IntRange {
         val (minPercent, maxPercent) = if (isLandscape) (30 to 70) else (25 to 60)
@@ -41,17 +47,18 @@ object KeyboardResizeBounds {
     /**
      * 底部手柄拖动的耦合增量（dp，向下为正）：高度 += delta、底部留白 -= delta。
      * 两者总和恒定 ⇒ 顶边严格不动，底边精确跟手。
-     * 边界：留白收敛到 [0, MAX_BOTTOM_PADDING_DP]，高度收敛到 [heightBounds]；
-     * 任一边到界后增量归零（如留白为 0 时往下拉 = 底边已贴屏幕底部，不再动作）。
+     * 边界：留白收敛到 [minBottomPaddingDp, MAX_BOTTOM_PADDING_DP]，高度收敛到 [heightBounds]；
+     * minBottomPaddingDp 可设为负导航栏 inset，使底边能拖入系统导航区。
      */
     fun bottomEdgeDragDelta(
         dyDp: Float,
         heightDp: Int,
         heightBounds: IntRange,
         bottomPaddingDp: Int,
+        minBottomPaddingDp: Int = 0,
     ): Float =
         dyDp.coerceIn(
             maxOf(bottomPaddingDp - MAX_BOTTOM_PADDING_DP, heightBounds.first - heightDp).toFloat(),
-            minOf(bottomPaddingDp, heightBounds.last - heightDp).toFloat(),
+            minOf(bottomPaddingDp - minBottomPaddingDp, heightBounds.last - heightDp).toFloat(),
         )
 }

@@ -104,6 +104,8 @@ import com.kingzcheung.xime.util.SubcharHelper
 import com.kingzcheung.xime.viewmodel.KeyboardUiState
 import com.kingzcheung.xime.viewmodel.KeyboardViewModel
 import com.kingzcheung.xime.viewmodel.ShiftMode
+import com.kingzcheung.xime.ui.theme.GboardStyle
+import com.kingzcheung.xime.ui.theme.LocalGboardStyle
 import com.kingzcheung.xime.ui.theme.KeyboardThemes
 import com.kingzcheung.xime.ui.theme.keyboardBackground
 
@@ -116,6 +118,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.TextUnit
 
+internal fun compactInputModeLabel(schemaName: String): String = when {
+    "混输" in schemaName -> "混拼"
+    "双拼" in schemaName -> "双拼"
+    "拼音" in schemaName -> "拼音"
+    else -> schemaName
+}
 
 /**
  * shift 视觉延迟：按下 shift 后延迟 [delayMillis] 再点亮键面（快速连按不闪烁），松开立即熄灭。
@@ -159,7 +167,7 @@ fun KeyboardLayout(
     val bubbleBgColor = palette.bubbleBgColor
     val kbKey = KeysConfigHelper.getKeyboardKeyConfig()
     val shadowParams = resolveKeyboardShadowParams()
-    val shadowEnabled = shadowParams.enabled
+    val shadowEnabled = shadowParams.enabled && !LocalGboardStyle.current
     val shadowElevation = shadowParams.elevation
     val shadowShapeRadius = shadowParams.shapeRadius
     val schemaName = uiState.schemaName
@@ -168,8 +176,14 @@ fun KeyboardLayout(
     val isSttEnabled = uiState.isSttEnabled
     val isVoiceMode = uiState.isVoiceMode
     val isVoiceSticky = uiState.voiceSticky
-    // 行布局：行声明（含行级 align/width）+ 参考列数 + 键盘级对齐策略
+    var swipeInputMode by remember { mutableStateOf(SettingsPreferences.getSwipeInputMode(context)) }
+    var emojiKeyEnabled by remember { mutableStateOf(SettingsPreferences.isEmojiKeyEnabled(context)) }
+    var keyBubbleEnabled by remember { mutableStateOf(SettingsPreferences.isKeyBubbleEnabled(context)) }
+    // 保留上游的行布局参数，同时应用用户的表情键开关。
     val rowsLayout = KeysConfigHelper.getRowsLayout(isAsciiMode)
+    val keyRows = if (emojiKeyEnabled) rowsLayout.rows else rowsLayout.rows.mapNotNull { row ->
+        row.copy(keys = row.keys.filterNot { it == "emoji" }).takeIf { it.keys.isNotEmpty() }
+    }
     val onKeyPressDown = callbacks.onKeyPressDown
     val onKeyRelease = callbacks.onKeyRelease
     val onVoiceModeChange = callbacks.onVoiceModeChange
@@ -187,6 +201,9 @@ fun KeyboardLayout(
         val listener =
             android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                 when (key) {
+                    "swipe_input_mode" -> swipeInputMode = SettingsPreferences.getSwipeInputMode(context)
+                    "emoji_key_enabled" -> emojiKeyEnabled = SettingsPreferences.isEmojiKeyEnabled(context)
+                    "key_bubble_enabled" -> keyBubbleEnabled = SettingsPreferences.isKeyBubbleEnabled(context)
                     SettingsPreferences.KEY_LANDSCAPE_SPLIT_KEYBOARD_ENABLED ->
                         landscapeSplitKeyboardEnabled =
                             SettingsPreferences.isLandscapeSplitKeyboardEnabled(context)
@@ -237,17 +254,18 @@ fun KeyboardLayout(
     val useLandscapeSplitKeyboard = isLandscape && landscapeSplitKeyboardEnabled
     // 手机横屏键盘矮，行距与分体紧凑档同源收紧；竖屏/平板保持常规行距
     val landscapeCompactSpacing = isLandscape && !isTablet()
-    // 平板参数档：大键面配更大的圆角与键间距（对齐 Gboard 平板观感），手机不受影响；
+    // 平板参数档：大键面配更大的圆角与键间距，手机不受影响；
     // 分体模式在平板上同样适用（分体只是行的排布方式，键面样式仍按设备档）
     val tabletParams = isTablet()
 
     // 圆角：yaml 按键盘覆盖优先，未覆盖时按设备档（平板大键面档）；与面板共用同一条规则
-    val qwertyCornerRadius = keyCornerRadiusFor(kbKey, "qwerty", tabletParams)
+    val gboardStyle = LocalGboardStyle.current
+    val qwertyCornerRadius = if (gboardStyle) GboardStyle.KeyRadius else keyCornerRadiusFor(kbKey, "qwerty", tabletParams)
 
     CompositionLocalProvider(
         LocalKeyCornerRadius provides qwertyCornerRadius,
         // 键面提示档与主键盘同一规则（退格的「清空」等提示的放大倍率与画法）
-        LocalSwipeHintCorner provides swipeHintCornerFor(isLandscape, tabletParams),
+        LocalSwipeHintCorner provides (gboardStyle || swipeHintCornerFor(isLandscape, tabletParams)),
         // 平板键面提示统一放大（字母上标/退格"清空"等所有键组件一致），手机为 1f
         LocalHintExtraScale provides hintExtraScaleFor(tabletParams),
         LocalKeyVisualPadding provides PaddingValues(
@@ -281,17 +299,19 @@ fun KeyboardLayout(
                 callbacks = callbacks,
                 uiState = uiState,
                 isAsciiMode = isAsciiMode,
-                keyRows = rowsLayout.rows,
+                keyRows = keyRows,
                 configVersion = cfgVer,
                 onSwipeStateChange = { state, bounds -> processSwipeState(state, bounds) },
+                swipeInputMode = swipeInputMode,
+                keyBubbleEnabled = keyBubbleEnabled,
             )
         } else {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .fillMaxHeight()
-                        // 平板键盘两侧留边（Gboard 式不满宽），手机维持贴边紧凑
-                        .padding(start = if (tabletParams) 16.dp else 4.dp, end = if (tabletParams) 16.dp else 4.dp, bottom = 8.dp),
+                        // 平板键盘两侧留边，手机维持贴边紧凑
+                        .padding(horizontal = if (tabletParams) 16.dp else 4.dp).padding(bottom = 8.dp),
             ) {
 
                 Column(
@@ -326,6 +346,9 @@ fun KeyboardLayout(
                         suppressCursorMove = suppressCursorMove,
                         processSwipeState = { state, bounds -> processSwipeState(state, bounds) },
                         configVersion = cfgVer,
+                        swipeInputMode = swipeInputMode,
+                        keyBubbleEnabled = keyBubbleEnabled,
+                        fontSize = if (gboardStyle) GboardStyle.LetterSize else TextUnit.Unspecified,
                     )
                     // 行数由 layout.rows 驱动（最多 5 行，含可选数字行）；语音模式用固定占位行
                     if (isVoiceMode && !isVoiceSticky) {
@@ -363,7 +386,7 @@ fun KeyboardLayout(
                             modifier = Modifier.weight(0.8f)
                         )
                     } else {
-                        val rows = remember(rowsLayout.rows) { normalizeQwertyRows(rowsLayout.rows) }
+                        val rows = remember(keyRows) { normalizeQwertyRows(keyRows) }
                         val columns = rowsLayout.columns ?: rows.firstOrNull()?.keys?.size ?: 10
                         rows.forEach { row ->
                             // 行宽由行声明或键盘级策略决定（[rowWidthFraction]）：显式 width 优先；
@@ -567,6 +590,13 @@ internal fun functionKeyGestures(
     )
 }
 
+internal fun isSwipeValueAllowed(mode: String, action: GestureAction?, value: String): Boolean = when {
+    action != null && action != GestureAction.COMMIT -> true
+    mode == "off" -> false
+    mode == "numbers_only" -> value.isNotEmpty() && value.all(Char::isDigit)
+    else -> true
+}
+
 /** 一行内的共享渲染参数（颜色/回调等），供行循环与功能键组件复用；主键盘与面板渲染共用。 */
 internal class QwertyRowEnv(
     val isAsciiMode: Boolean,
@@ -602,6 +632,8 @@ internal class QwertyRowEnv(
     val ctrlFontSize: TextUnit? = null,
     /** 手势/宽度配置来源段名（主键盘 = "qwerty"；面板 = number / common_symbols…）。 */
     val section: String = "qwerty",
+    val swipeInputMode: String = "numbers_symbols",
+    val keyBubbleEnabled: Boolean = true,
 )
 
 /** 功能键列宽：显式 `keys.<id>.width` 优先，否则内置默认。 */
@@ -676,7 +708,8 @@ internal fun resolveKeyboardPalette(themeId: String, isDarkTheme: Boolean): Keyb
         ?: if (isDarkTheme) longToColor(kbColors.keyTextColorDark) else longToColor(kbColors.keyTextColor)
     val specialKeyBackgroundColor = if (isDarkTheme) kbColors.specialKeyBgColorDark?.let { longToColor(it) }
         ?: themeSpecialKeyColor else kbColors.specialKeyBgColor?.let { longToColor(it) } ?: themeSpecialKeyColor
-    val specialKeyTextColor = KeyboardThemes.getSpecialKeyTextColorForBackground(
+    val specialKeyTextColor = if (com.kingzcheung.xime.ui.theme.GboardStyle.matches(themeId)) KeyboardThemes.getAccentColor(themeId, isDarkTheme)
+    else KeyboardThemes.getSpecialKeyTextColorForBackground(
         specialKeyBackgroundColor, keyTextColor
     )
     return KeyboardPalette(
@@ -700,7 +733,7 @@ internal data class KeyboardShadowParams(
 internal fun resolveKeyboardShadowParams(): KeyboardShadowParams {
     val kbShadow = KeysConfigHelper.getKeyboardShadow()
     return KeyboardShadowParams(
-        enabled = kbShadow.enabled,
+        enabled = kbShadow.enabled && !LocalGboardStyle.current,
         elevation = kbShadow.elevation.dp,
         // 平板下阴影圆角不小于键圆角下限，否则键四角外露更方的阴影角（视觉"脏边"）
         shapeRadius = if (isTablet()) maxOf(kbShadow.shapeRadius.dp, TABLET_KEY_CORNER_RADIUS) else kbShadow.shapeRadius.dp,
@@ -870,6 +903,8 @@ private fun QwertyRow(
                     onGestureAction = env.onGestureAction,
                     configVersion = env.configVersion,
                     compactButton = env.landscape,
+                    swipeInputMode = env.swipeInputMode,
+                    keyBubbleEnabled = env.keyBubbleEnabled,
                 )
                 i = j
             }
@@ -892,6 +927,8 @@ internal val RENDERED_FUNCTION_KEY_IDS: Set<String> = setOf(
 
 @Composable
 internal fun FunctionKeyCell(id: String, env: QwertyRowEnv, modifier: Modifier) {
+    val radius = if (LocalGboardStyle.current && (id == "mode_change" || id == "enter")) GboardStyle.FunctionRadius else LocalKeyCornerRadius.current
+    CompositionLocalProvider(LocalKeyCornerRadius provides radius) {
     when (id) {
         "shift" -> ShiftCell(env, modifier)
         "caps" -> CapsCell(env, modifier)
@@ -926,6 +963,8 @@ internal fun FunctionKeyCell(id: String, env: QwertyRowEnv, modifier: Modifier) 
         "space_key" -> PanelTextCell("space_key", stringResource(R.string.keyboard_space), "space", special = false, env, modifier)
         else -> FileLogger.w("XimeKeyboard", "功能键 id \"$id\" 没有对应组件，该键不会显示：请改用受支持的 id")
     }
+}
+
 }
 
 /**
@@ -1344,6 +1383,9 @@ private fun ModeChangeCell(env: QwertyRowEnv, modifier: Modifier) {
 
 @Composable
 private fun CommaCell(env: QwertyRowEnv, modifier: Modifier) {
+    val gboardStyle = LocalGboardStyle.current
+    val keyColor = if (gboardStyle) env.specialKeyBackgroundColor else env.keyBackgroundColor
+    val textColor = if (gboardStyle) env.specialKeyTextColor else env.keyTextColor
     val k2KeyGesture = KeysConfigHelper.getGestureFor(env.section, "comma", env.isAsciiMode)
     val k2Gestures = functionKeyGestures(k2KeyGesture, env)
     val k2TapAction = k2KeyGesture?.tap?.action
@@ -1413,8 +1455,8 @@ private fun CommaCell(env: QwertyRowEnv, modifier: Modifier) {
         SwipeableIconKeyButton(
             icon = rememberVectorPainter(Icons.Default.Language),
             onClick = k2OnClick,
-            backgroundColor = env.keyBackgroundColor,
-            iconColor = env.keyTextColor,
+            backgroundColor = keyColor,
+            iconColor = textColor,
             modifier = modifier,
             a11yDescription = tr(R.string.s_zhongyingqiehuan),
             a11yState = if (env.isAsciiMode) tr(R.string.s_dangqianyingwen) else tr(R.string.s_dangqianzhongwen),
@@ -1435,8 +1477,8 @@ private fun CommaCell(env: QwertyRowEnv, modifier: Modifier) {
             // tap.bubble: false → 不弹按压气泡（默认 true，行为与改动前一致）
             pressText = k2TapLabel.takeIf { k2KeyGesture?.tap?.bubble ?: true },
             onClick = k2OnClick,
-            backgroundColor = env.keyBackgroundColor,
-            textColor = env.keyTextColor,
+            backgroundColor = keyColor,
+            textColor = textColor,
             modifier = modifier,
             swipeText = k2SwipeUpText,
             swipeDownText = k2SwipeDownText,
@@ -1703,6 +1745,8 @@ fun KeyboardRowWithConfig(
     keyWidths: List<Float>? = null,
     /** 手机横屏紧凑档：改用 [SwipeableKeyButtonLandscape]（主字符与上滑提示垂直堆叠、手势阈值收紧）。 */
     compactButton: Boolean = false,
+    swipeInputMode: String = "numbers_symbols",
+    keyBubbleEnabled: Boolean = true,
 ) {
     Row(
         modifier = modifier
@@ -1711,12 +1755,17 @@ fun KeyboardRowWithConfig(
         keys.forEachIndexed { index, key ->
             val rawSwipeUpLabel = KeysConfigHelper.getSwipeUpLabel(key, isAsciiMode)
             val swipeUpAction = KeysConfigHelper.getSwipeUpAction(key, isAsciiMode)
+            val swipeUpCommitValue = KeysConfigHelper.getSwipeUpCommitValue(key, isAsciiMode)
+            val swipeUpRaw = KeysConfigHelper.getKeyGesture(key, isAsciiMode)?.swipeUp
+            val swipeUpValue = swipeUpRaw?.value?.takeIf { it.isNotEmpty() }
+                ?: swipeUpRaw?.label?.takeIf { it.isNotEmpty() }
+                ?: KeysConfigHelper.getSwipeUpCommitValue(key, isAsciiMode).orEmpty()
+            val swipeAllowed = isSwipeValueAllowed(swipeInputMode, swipeUpAction, swipeUpValue)
             val swipeUpDisplay = KeysConfigHelper.getSwipeUpDisplay(key, isAsciiMode)
             val swipeUpBubble = KeysConfigHelper.getSwipeUpBubble(key, isAsciiMode)
             // 键面提示位置由 display 决定（BUBBLE 用空串压制回退）；运行时气泡由 bubble 决定
-            val swipeUpKeyLabel = if (swipeUpDisplay == DisplayMode.BUBBLE) "" else rawSwipeUpLabel
-            val swipeUpText = if (swipeUpBubble) rawSwipeUpLabel else null
-            val swipeUpCommitValue = KeysConfigHelper.getSwipeUpCommitValue(key, isAsciiMode)
+            val swipeUpKeyLabel = if (!swipeAllowed || swipeUpDisplay == DisplayMode.BUBBLE) "" else rawSwipeUpLabel
+            val swipeUpText = if (swipeAllowed && swipeUpBubble) rawSwipeUpLabel else null
             val swipeDownRaw = KeysConfigHelper.getKeyGesture(key, isAsciiMode)?.swipeDown
             val swipeDownLabel = swipeDownRaw?.label?.takeIf { it.isNotEmpty() }
             val swipeDownAction = swipeDownRaw?.action
@@ -1761,7 +1810,8 @@ fun KeyboardRowWithConfig(
                 key, swipeUpAction, swipeUpCommitValue, onKeyPress, onCommitText, onGestureAction
             ) {
                 swipeUpHandlerFor(
-                    KeysConfigHelper.getKeyGesture(key, isAsciiMode)?.swipeUp,
+                    if (swipeAllowed || swipeUpAction != null && swipeUpAction != GestureAction.COMMIT) swipeUpRaw
+                    else KeyAction(action = GestureAction.NONE),
                     swipeUpCommitValue, onKeyPress, onCommitText, onGestureAction,
                 )
             }
@@ -1814,7 +1864,7 @@ fun KeyboardRowWithConfig(
                 SwipeableKeyButtonLandscape(
                     text = displayText,
                     // tap.bubble: false → 不弹按压气泡（默认 true，行为与改动前一致）
-                    pressText = displayText.takeIf { tapAction?.bubble ?: true },
+                    pressText = displayText.takeIf { keyBubbleEnabled && (tapAction?.bubble ?: true) },
                     onClick = onClick,
                     backgroundColor = config.keyBackgroundColor,
                     textColor = config.keyTextColor,
@@ -1843,7 +1893,7 @@ fun KeyboardRowWithConfig(
                 layoutMode = KeysConfigHelper.getButtonLayout(isAsciiMode),
                 text = displayText,
                 // tap.bubble: false → 不弹按压气泡（默认 true，行为与改动前一致）
-                pressText = displayText.takeIf { tapAction?.bubble ?: true },
+                pressText = displayText.takeIf { keyBubbleEnabled && (tapAction?.bubble ?: true) },
                 onClick = onClick,
                 backgroundColor = config.keyBackgroundColor,
                 textColor = config.keyTextColor,
@@ -1880,7 +1930,7 @@ private fun ShiftCapsKeyButton(
     backgroundColor: Color,
     iconColor: Color,
     modifier: Modifier = Modifier,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
     /** 配置的 tap/双击动作；为 null 时走内置大小写状态机（shift_single / shift_caps）。 */
@@ -1910,6 +1960,7 @@ private fun ShiftCapsKeyButton(
             }
         } else Modifier
     }
+    val gboardStyle = LocalGboardStyle.current
     val keyCornerRadius = LocalKeyCornerRadius.current
     val keyClipShape = remember(keyCornerRadius) { RoundedCornerShape(keyCornerRadius) }
 
@@ -1958,7 +2009,8 @@ private fun ShiftCapsKeyButton(
             .then(shadowModifier)
             .clip(keyClipShape)
             .background(
-                if (isPressed) darkenColor(backgroundColor, 0.1f)
+                if (isPressed && gboardStyle) GboardStyle.pressedSurface(backgroundColor, iconColor)
+                else if (isPressed) darkenColor(backgroundColor, 0.1f)
                 else if (shiftMode == ShiftMode.CAPS) darkenColor(backgroundColor, 0.2f)
                 else if (shiftMode == ShiftMode.SINGLE) darkenColor(backgroundColor, 0.1f)
                 else backgroundColor
@@ -2026,6 +2078,8 @@ private fun LandscapeKeyboardContent(
     keyRows: List<KeyboardRow>,
     configVersion: Int = 0,
     onSwipeStateChange: ((SwipeState, Rect) -> Unit)? = null,
+    swipeInputMode: String = "numbers_symbols",
+    keyBubbleEnabled: Boolean = true,
 ) {
     val isShifted by viewModel.isShifted.collectAsStateWithLifecycle()
     val shiftMode by viewModel.shiftMode.collectAsStateWithLifecycle()
@@ -2045,7 +2099,7 @@ private fun LandscapeKeyboardContent(
     val specialKeyBackgroundColor = palette.specialKeyBackgroundColor
     val specialKeyTextColor = palette.specialKeyTextColor
     val shadowParams = resolveKeyboardShadowParams()
-    val shadowEnabled = shadowParams.enabled
+    val shadowEnabled = shadowParams.enabled && !LocalGboardStyle.current
     val shadowElevation = shadowParams.elevation
     val shadowShapeRadius = shadowParams.shapeRadius
     // 分体行拆分：行内容与竖屏同源（getKeyRows，含 xime.custom.yaml 自定义布局），
@@ -2090,6 +2144,8 @@ private fun LandscapeKeyboardContent(
         landscape = compactStyle,
         fontSize = landscapeFontSize,
         swipeFontSize = landscapeSwipeFontSize,
+        swipeInputMode = swipeInputMode,
+        keyBubbleEnabled = keyBubbleEnabled,
     )
 
     // 行距由外层 provider 统一提供（手机横屏回退 2dp / 平板 4.25dp），此处不再覆盖。
@@ -2170,6 +2226,8 @@ private fun SpaceKey(
     onLongPressSelect: ((String) -> Unit)? = null,
     onSwipeStateChange: ((SwipeState, Rect) -> Unit)? = null,
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val gboardStyle = LocalGboardStyle.current
     val currentOnKeyPress by rememberUpdatedState(onKeyPress)
     val currentOnKeyPressDown by rememberUpdatedState(onKeyPressDown)
     val currentOnKeyRelease by rememberUpdatedState(onKeyRelease)
@@ -2209,10 +2267,12 @@ private fun SpaceKey(
             .pointerInput(isSttEnabled, voiceSticky, currentLongPressItems == null) {
                 awaitEachGesture {
                     val down = awaitFirstDown(requireUnconsumed = false)
-
+                    isPressed = true
+                    try {
                     if (voiceSticky) {
                         // 常驻语音模式：轻触空格即结束语音
                         waitForUpOrCancellation()
+                        isPressed = false
                         currentOnVoiceModeChange?.invoke(false)
                         return@awaitEachGesture
                     }
@@ -2328,12 +2388,16 @@ private fun SpaceKey(
                         dir = null
                     }
                     longPressJob.cancel()
+                    isPressed = false
                     currentOnKeyRelease?.invoke("space")
 
                     if (dir != null && currentOnSwipe != null) {
                         currentOnSwipe?.invoke(dir)
                     } else if (!longPressTriggered) {
                         if (currentOnTap != null) currentOnTap?.invoke() else currentOnKeyPress("space")
+                    }
+                    } finally {
+                        isPressed = false
                     }
                 }
             }
@@ -2342,7 +2406,7 @@ private fun SpaceKey(
             .fillMaxHeight()
             .then(shadowModifier)
             .clip(RoundedCornerShape(LocalKeyCornerRadius.current))
-            .background(keyBackgroundColor)
+            .background(if (gboardStyle && isPressed) GboardStyle.pressedSurface(keyBackgroundColor, keyTextColor) else keyBackgroundColor)
             .keySemantics(
                 when {
                     voiceSticky -> tr(R.string.s_qingchujieshuyuyin)
@@ -2377,7 +2441,7 @@ private fun SpaceKey(
             }
             else -> {
                 Text(
-                    text = if (isAsciiMode) "English" else schemaName,
+                    text = if (isAsciiMode) "English" else compactInputModeLabel(schemaName),
                     color = keyTextColor,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Normal,

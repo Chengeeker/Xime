@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -71,10 +72,10 @@ fun SchemaDictBrowserPanel(
                             )
                         }
                     },
-                    onClick = {
+                    onClick = hapticAction(DropdownMenuItem@ {
                         dismiss()
                         viewModel.selectSchema(s.schemaId)
-                    }
+                    })
                 )
             }
         }
@@ -140,8 +141,8 @@ fun SchemaDictBrowserContent(onBack: () -> Unit) {
             TopAppBar(
                 title = { Text(tr(R.string.s_fangancibiao)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = tr(R.string.s_fanhui))
+                    IconButton(onClick = hapticAction(onBack)) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "返回")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

@@ -1,8 +1,9 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -91,7 +92,7 @@ fun ClipboardSyncSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_jiantiebantongbu)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -138,7 +139,7 @@ fun ClipboardSyncSettingsContent(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Button(
-                                onClick = onNavigateToMarket,
+                                onClick = hapticAction(onNavigateToMarket),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 Text(tr(R.string.s_qianwangkuozhanshangdian))

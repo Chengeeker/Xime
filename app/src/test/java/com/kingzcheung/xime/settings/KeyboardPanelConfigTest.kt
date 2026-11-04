@@ -288,7 +288,7 @@ class KeyboardPanelConfigTest {
         // 未写 *_tablet 的键盘保持原样；手机（不调用该函数）也不受影响
         assertEquals(2f to 2f, config.spacingFor("number"))
         assertEquals(2f to 4.25f, config.spacingFor("symbol"))
-        assertEquals(8, config.cornerRadiusFor("number"))
+        assertEquals(6, config.cornerRadiusFor("number"))
     }
 
     @Test
@@ -335,12 +335,12 @@ class KeyboardPanelConfigTest {
         assertEquals(10, config.cornerRadiusFor("symbol"))
         assertEquals(8, config.cornerRadiusFor("number"))
         assertEquals(6, KeysConfigHelper.applyTabletKeyOverrides(config).cornerRadiusFor("number"))
-        // 内置资产：面板没有键盘级圆角覆盖，取值 = 全局 8dp（渲染层的「平板大键面档」默认
+        // 内置资产：面板没有键盘级圆角覆盖，取值 = 全局 6dp（渲染层的「平板大键面档」默认
         // 由 keyCornerRadiusFor 统一决定，见 KeyCornerRadiusTest）
         val builtIn = KeysConfigHelper.parseKeyboardKeyYamlText(assetXimeYaml()) ?: error("内置 key 配置解析失败")
-        assertEquals(8, builtIn.cornerRadiusFor("number"))
-        assertEquals(8, builtIn.cornerRadiusFor("symbol"))
-        assertEquals(8, KeysConfigHelper.applyTabletKeyOverrides(builtIn).cornerRadiusFor("symbol"))
+        assertEquals(6, builtIn.cornerRadiusFor("number"))
+        assertEquals(6, builtIn.cornerRadiusFor("symbol"))
+        assertEquals(6, KeysConfigHelper.applyTabletKeyOverrides(builtIn).cornerRadiusFor("symbol"))
     }
 
     @Test

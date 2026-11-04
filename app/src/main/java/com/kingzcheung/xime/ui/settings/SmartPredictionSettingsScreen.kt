@@ -1,8 +1,10 @@
 package com.kingzcheung.xime.ui.settings
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+import com.kingzcheung.xime.ui.theme.hapticAction
+import com.kingzcheung.xime.ui.theme.hapticToggle
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -106,7 +108,7 @@ fun SmartPredictionSettingsContent(
             TopAppBar(
                 title = { Text(tr(R.string.s_zhinenglianxiang)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = hapticAction(onBack)) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = tr(R.string.s_fanhui)
@@ -156,7 +158,7 @@ fun SmartPredictionSettingsContent(
                         } else {
                             Switch(
                                 checked = uiState.isEnabled,
-                                onCheckedChange = { viewModel.setEnabled(it) },
+                                onCheckedChange = hapticToggle(Switch@ { viewModel.setEnabled(it) }),
                                 colors = SwitchDefaults.colors(
                                     checkedThumbColor = MaterialTheme.colorScheme.primary,
                                     checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
@@ -306,7 +308,7 @@ fun SmartPredictionSettingsContent(
                                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
                                     OutlinedButton(
-                                        onClick = { viewModel.saveUserData() },
+                                        onClick = hapticAction(OutlinedButton@ { viewModel.saveUserData() }),
                                         enabled = !uiState.isSaving,
                                         modifier = Modifier.weight(1f)
                                     ) {
@@ -321,7 +323,7 @@ fun SmartPredictionSettingsContent(
                                     }
 
                                     OutlinedButton(
-                                        onClick = { viewModel.refreshCacheSize() },
+                                        onClick = hapticAction(OutlinedButton@ { viewModel.refreshCacheSize() }),
                                         modifier = Modifier.weight(1f)
                                     ) {
                                         Icon(Icons.Default.Settings, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -378,7 +380,7 @@ private fun AssociationModeRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        RadioButton(selected = isSelected, onClick = onClick)
+        RadioButton(selected = isSelected, onClick = hapticAction(onClick))
     }
 }
 
@@ -459,7 +461,7 @@ private fun PredictionModelCard(
         if (isDownloaded) {
             Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(
-                onClick = onSelect,
+                onClick = hapticAction(onSelect),
                 enabled = !isSelected,
                 shape = RoundedCornerShape(50)
             ) {
@@ -476,7 +478,7 @@ private fun PredictionModelCard(
         } else {
             Spacer(modifier = Modifier.width(8.dp))
             OutlinedButton(
-                onClick = onOpenInStore,
+                onClick = hapticAction(onOpenInStore),
                 shape = RoundedCornerShape(50)
             ) {
                 Icon(

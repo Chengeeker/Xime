@@ -66,6 +66,27 @@ class KeyboardResizeBoundsTest {
     }
 
     @Test
+    fun `bottom drag extends into navigation area when enabled`() {
+        val bounds = KeyboardResizeBounds.heightBoundsDp(800, isLandscape = false)
+        assertEquals(12f, KeyboardResizeBounds.bottomEdgeDragDelta(12f, 300, bounds, 0, -18))
+        assertEquals(18f, KeyboardResizeBounds.bottomEdgeDragDelta(40f, 300, bounds, 0, -18))
+        assertEquals(0f, KeyboardResizeBounds.bottomEdgeDragDelta(10f, 300, bounds, -18, -18))
+    }
+
+    @Test
+    fun `negative bottom padding extends keyboard into inset without shrinking its viewport`() {
+        assertEquals(300, KeyboardResizeBounds.contentViewportHeightDp(300, -24))
+        assertEquals(0, KeyboardResizeBounds.contentViewportOffsetDp(-24, 24))
+        assertEquals(-12, KeyboardResizeBounds.contentViewportOffsetDp(-12, 24))
+    }
+
+    @Test
+    fun `positive bottom padding remains a spacer above navigation inset`() {
+        assertEquals(330, KeyboardResizeBounds.contentViewportHeightDp(300, 30))
+        assertEquals(-24, KeyboardResizeBounds.contentViewportOffsetDp(30, 24))
+    }
+
+    @Test
     fun `bottom drag downward clamps when padding runs out`() {
         val bounds = KeyboardResizeBounds.heightBoundsDp(800, isLandscape = false)
         // 留白只有 30，下拖 50 ⇒ 只走 30（底边贴回屏幕底部即停），高度同步加 30

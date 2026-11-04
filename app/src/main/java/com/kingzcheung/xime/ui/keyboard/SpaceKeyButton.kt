@@ -50,7 +50,7 @@ fun SpaceKeyButton(
     onPress: (() -> Unit)? = null,
     isVoiceMode: Boolean = false,
     onVoiceModeChange: ((Boolean) -> Unit)? = null,
-    shadowEnabled: Boolean = true,
+    shadowEnabled: Boolean = false,
     shadowElevation: Dp = 1.dp,
     shadowShapeRadius: Dp = 8.dp,
 ) {

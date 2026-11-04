@@ -1,8 +1,8 @@
 package com.kingzcheung.xime.ui.keyboard
 
 import com.kingzcheung.xime.R
-
 import com.kingzcheung.xime.i18n.tr
+
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -51,21 +51,20 @@ import kotlin.math.roundToInt
 /**
  * 键盘调节层（微信输入法式交互）。
  *
- * **渲染在键盘内容 Box 内部**（调用方传 `Modifier.matchParentSize()`）：
- * 遮罩、四条边手柄、三个按钮与键盘共享同一个矩形——遮罩就是键盘矩形本身，
- * 手柄锁遮罩四边、按钮在遮罩内均分，**结构上像素级对齐，不存在坐标复制误差**。
+ * **渲染在 IME 根 Box**（调用方传 `Modifier.matchParentSize()`）：遮罩从键盘顶沿开始，
+ * 覆盖可触摸的 IME 全高；底部手柄因此能进入系统手势区，不会只画出来却落在触摸边界外。
  *
  * 进入调节后：整个键盘块蒙 55% 黑半透明遮罩（按键隐约可见），控件浮在遮罩上：
  *  - 顶部 ≡ 手柄：上下拖 = 键盘高度（底边锚定，上拖变高、下拖变矮，顶边跟手）；
- *  - 底部 ≡ 手柄：**底边跟手**（顶边锚定）——上拖底边上移（变矮+抬离）、下拖贴回
- *    （贴底即止）；高度与底部留白耦合增减（[KeyboardResizeBounds.bottomEdgeDragDelta]），
+ *  - 底部 ≡ 手柄：**底边跟手**（顶边锚定）——上拖底边上移（变矮+抬离）、下拖可进入导航区；
+ *    高度与底部留白耦合增减（[KeyboardResizeBounds.bottomEdgeDragDelta]），
  *    总高恒定 ⇒ 顶边不动、键盘不整体位移；
  *  - 左 / 右 ||| 手柄：各自独立调所在侧边距（边跟手，往内拖变窄、往外拖变宽，
  *    两侧不等宽时键盘整体偏移）；
  *  - 「重置 / 取消 / 确定」：在遮罩宽度内均分（SpaceEvenly），遮罩变窄时间距自动压缩。
  *
  * 可操作性约束：
- *  - 手柄触控区**整体位于遮罩内侧**（键盘上边缘之外是宿主应用，IME 窗口收不到触摸）；
+ *  - 手柄触控区位于 IME 可触摸区域内（键盘上边缘之外是宿主应用，IME 窗口收不到触摸）；
  *  - 拖动回调上报**原始位移 (dx, dy)**（手指向下/向右为正），方向语义由各手柄调用处
  *    决定，中转层不做取反（双重取反曾导致底部方向相反）；
  *  - 组件不持有尺寸状态：入参即预览值，拖动每帧回调新的绝对值，调用方更新状态后
@@ -75,6 +74,7 @@ import kotlin.math.roundToInt
 fun KeyboardResizeOverlay(
     heightDp: Int,
     bottomPaddingDp: Int,
+    bottomExtensionDp: Int = 0,
     marginStartDp: Int,
     marginEndDp: Int,
     onHeightChange: (Int) -> Unit,
@@ -145,7 +145,7 @@ fun KeyboardResizeOverlay(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .offset(y = -bottomPaddingDp.dp)
+                .offset(y = -(bottomPaddingDp + bottomExtensionDp).dp)
                 .height(HANDLE_TOUCH_DP)
                 .dragging { _, dy ->
                     val delta = KeyboardResizeBounds.bottomEdgeDragDelta(
@@ -153,6 +153,7 @@ fun KeyboardResizeOverlay(
                         heightDp = latestHeight,
                         heightBounds = heightBounds,
                         bottomPaddingDp = latestBottomPadding,
+                        minBottomPaddingDp = -bottomExtensionDp,
                     )
                     latestOnHeightChange((latestHeight + delta).roundToInt())
                     latestOnBottomPaddingChange((latestBottomPadding - delta).roundToInt())

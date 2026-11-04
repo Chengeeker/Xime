@@ -5,10 +5,18 @@
 -->
 <data-extraction-rules>
     <cloud-backup>
+        <exclude domain="file" path="dictionary-packs/transaction/" />
+        <exclude domain="file" path="dictionary-packs/previous/" />
         <!-- 同 backup_rules.xml：剪贴板图片目录排除在云备份之外 -->
         <exclude domain="file" path="clipboard_images/" />
+        <exclude domain="file" path="bitwarden-sync.enc" />
+        <exclude domain="sharedpref" path="xime_bitwarden_vault.xml" />
     </cloud-backup>
     <device-transfer>
+        <exclude domain="file" path="dictionary-packs/transaction/" />
+        <exclude domain="file" path="dictionary-packs/previous/" />
         <exclude domain="file" path="clipboard_images/" />
+        <exclude domain="file" path="bitwarden-sync.enc" />
+        <exclude domain="sharedpref" path="xime_bitwarden_vault.xml" />
     </device-transfer>
 </data-extraction-rules>
