@@ -131,18 +131,6 @@ class MainActivity : ComponentActivity() {
             }
 
             XimeTheme(darkTheme = isDarkTheme, themeId = keyboardTheme) {
-                val view = LocalView.current
-                if (!view.isInEditMode) {
-                    DisposableEffect(darkMode) {
-                        val window = (view.context as? ComponentActivity)?.window
-                        if (window != null) {
-                            val controller = WindowInsetsControllerCompat(window, view)
-                            controller.isAppearanceLightStatusBars = !isDarkTheme
-                            controller.isAppearanceLightNavigationBars = !isDarkTheme
-                        }
-                        onDispose { }
-                    }
-                }
 
                 Box(modifier = Modifier.fillMaxSize()) {
                     if (showWizard) {

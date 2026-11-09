@@ -202,6 +202,19 @@ fun XimeTheme(
     }
     MaterialTheme(colorScheme = colorScheme, typography = typography) {
         val view = LocalView.current
+        val window = (context as? android.app.Activity)?.window
+        if (!view.isInEditMode && window != null) {
+            DisposableEffect(window, darkTheme) {
+                @Suppress("DEPRECATION")
+                window.navigationBarColor = android.graphics.Color.TRANSPARENT
+                if (android.os.Build.VERSION.SDK_INT >= 29) window.isNavigationBarContrastEnforced = false
+                androidx.core.view.WindowCompat.getInsetsController(window, view).apply {
+                    isAppearanceLightStatusBars = !darkTheme
+                    isAppearanceLightNavigationBars = !darkTheme
+                }
+                onDispose { }
+            }
+        }
         CompositionLocalProvider(
             LocalIndication provides remember(view) { XimeHapticIndication(view) },
             LocalRippleConfiguration provides null,

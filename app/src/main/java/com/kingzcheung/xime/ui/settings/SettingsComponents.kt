@@ -77,7 +77,7 @@ fun SettingsSection(
         Surface(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            color = MaterialTheme.colorScheme.settingsCardColor(),
             shadowElevation = 0.dp
         ) {
             Column(content = content)
