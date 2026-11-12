@@ -17,7 +17,7 @@ interface ValueCipher {
 
 /**
  * Android Keystore AES-GCM 实现：密钥不可导出（硬件隔离），
- * 密文格式 `enc:` + base64(iv + ciphertext)，GCM 认证失败视为无效返回 null。
+ * 密文格式 `enc:` + base64(iv + ciphertext)，读取失败分类上报，保留原值，不创建替代密钥。
  * 明文（无 `enc:` 前缀）原样返回，兼容历史数据。
  */
 object SecureValueCipher : ValueCipher {
@@ -32,7 +32,7 @@ object SecureValueCipher : ValueCipher {
     @Volatile
     private var cachedKey: SecretKey? = null
 
-    private fun getOrCreateKey(): SecretKey {
+    private fun getOrCreateKey(create:Boolean=true): SecretKey {
         cachedKey?.let { return it }
         synchronized(this) {
             cachedKey?.let { return it }
@@ -41,6 +41,7 @@ object SecureValueCipher : ValueCipher {
                 cachedKey = it
                 return it
             }
+            if(!create)throw SecretReadFailure(SecretFailureKind.MISSING_KEY)
             val generator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, KEYSTORE)
             generator.init(
                 KeyGenParameterSpec.Builder(
@@ -69,20 +70,18 @@ object SecureValueCipher : ValueCipher {
 
     override fun decrypt(stored: String): String? {
         if (!stored.startsWith(PREFIX)) return stored
-        return try {
+        return readEncrypted {
             val blob = Base64.decode(stored.removePrefix(PREFIX), Base64.NO_WRAP)
-            if (blob.size < IV_BYTES) return null
+            require(blob.size in (IV_BYTES+16)..(16*1024*1024)){"插件配置密文格式无效"}
             val iv = blob.copyOfRange(0, IV_BYTES)
             val cipherText = blob.copyOfRange(IV_BYTES, blob.size)
             val cipher = Cipher.getInstance(TRANSFORMATION)
             cipher.init(
                 Cipher.DECRYPT_MODE,
-                getOrCreateKey(),
+                getOrCreateKey(false),
                 GCMParameterSpec(GCM_TAG_BITS, iv)
             )
             String(cipher.doFinal(cipherText), Charsets.UTF_8)
-        } catch (e: Exception) {
-            null
         }
     }
 }

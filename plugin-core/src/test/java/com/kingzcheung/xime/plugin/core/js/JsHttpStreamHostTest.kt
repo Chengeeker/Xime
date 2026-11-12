@@ -72,7 +72,7 @@ class JsHttpStreamHostTest {
             return HttpResponse(201, mapOf("ETag" to "\"v1\""), "created".toByteArray())
         }
 
-        override fun download(
+        override suspend fun download(
             method: String, url: String, headers: Map<String, String>, timeoutMillis: Int?
         ): HttpResponse? = HttpResponse(
             status = 200, headers = mapOf("Content-Length" to "1234"),

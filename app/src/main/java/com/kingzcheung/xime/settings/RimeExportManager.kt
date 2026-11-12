@@ -128,7 +128,7 @@ object RimeExportManager {
             .trim('_')
     }
 
-    fun buildArchiveToFile(context: Context): Result<Pair<String, File>> {
+    fun buildArchiveToFile(context: Context,backupPassword:CharArray?=null): Result<Pair<String, File>> {
         val dateStr = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date())
         val fileName = backupFileName(Build.MODEL, dateStr)
         val cacheDir = File(context.cacheDir, "backup-export").apply { mkdirs() }
@@ -150,7 +150,7 @@ object RimeExportManager {
                         file.inputStream().use { it.copyTo(zos) }
                         zos.closeEntry()
                     }
-                    BackupManager.collectMetaEntries(context).forEach { (entryName, bytes) ->
+                    BackupManager.collectMetaEntries(context,backupPassword).forEach { (entryName, bytes) ->
                         zos.putNextEntry(ZipEntry(entryName))
                         zos.write(bytes)
                         zos.closeEntry()

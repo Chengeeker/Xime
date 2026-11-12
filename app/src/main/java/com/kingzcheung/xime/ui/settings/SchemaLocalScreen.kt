@@ -144,7 +144,7 @@ fun SchemaLocalContent(
     if (showImportWarning) {
         AlertDialog(
             onDismissRequest = { showImportWarning = false },
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.settingsCardColor(),
             title = { Text(tr(R.string.s_daorufanganxuzhi), fontWeight = FontWeight.SemiBold) },
             text = {
                 Column {
@@ -201,7 +201,7 @@ fun SchemaLocalContent(
             onDismissRequest = {
                 if (!importUiState.isDownloading) { showUrlDialog = false; urlInput = "" }
             },
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.settingsCardColor(),
             title = { Text(tr(R.string.s_wangluodaoru), fontWeight = FontWeight.SemiBold) },
             text = {
                 Column {
@@ -298,7 +298,7 @@ fun SchemaLocalContent(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(title) },
@@ -361,7 +361,7 @@ fun SchemaLocalContent(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface,
                 ),
             )
@@ -438,7 +438,7 @@ private fun LocalPackageCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor()),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {

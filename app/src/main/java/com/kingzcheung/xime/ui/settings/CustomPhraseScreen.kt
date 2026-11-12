@@ -96,7 +96,7 @@ fun CustomPhraseSettingsContent(onBack: () -> Unit) {
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
@@ -246,7 +246,7 @@ private fun CustomPhraseBody(
 private fun PhraseItem(entry: DictEntry, onEdit: () -> Unit, onDelete: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor())
     ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),

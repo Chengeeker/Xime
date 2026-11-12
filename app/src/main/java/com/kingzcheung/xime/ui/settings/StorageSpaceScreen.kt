@@ -110,7 +110,7 @@ fun StorageSpaceScreen(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_cunchukongjian)) },
@@ -123,7 +123,7 @@ fun StorageSpaceScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
@@ -140,7 +140,7 @@ fun StorageSpaceScreen(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor()),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
@@ -189,7 +189,7 @@ fun StorageSpaceScreen(
                                     Modifier
                                 }
                             ),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor()),
                         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                     ) {
                         Column {

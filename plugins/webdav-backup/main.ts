@@ -77,6 +77,7 @@ function resolveBase(): ResolvedBase {
   let url = cfg.url;
   if (!/^https?:\/\//.test(url)) url = 'https://' + url;
   url = url.replace(/\/+$/, '');
+  if (!/^https:\/\/[^/@?#]+(?:\/[^?#]*)?$/.test(url)) { result.error = '请使用不含账号或查询参数的 HTTPS 地址'; return result; }
   const m = url.match(/^https?:\/\/[^/]+/);
   const origin = m ? m[0] : url;
   const urlPath = url.substring(origin.length); // DAV 根的路径前缀（坚果云为 /dav）
@@ -98,32 +99,28 @@ function resolveBase(): ResolvedBase {
 // ------------------------------------------------------------------
 
 // 逐级 MKCOL 创建远端目录（起点为 DAV 根，即 url 的路径前缀；已存在 405 视为成功）
-async function ensureCollection(cfg: BackupConfig, headers: Record<string, string>): Promise<boolean> {
+async function ensureCollection(cfg: BackupConfig, headers: Record<string, string>): Promise<string | null> {
   const { davRoot } = resolveBase();
-  if (!davRoot) return false;
+  if (!davRoot) return '创建备份目录失败：服务器地址无效';
   const remote = cfg.remotePath.replace(/^\/+/, '').replace(/\/+$/, '');
   let cur = davRoot;
   for (const seg of remote.split('/').filter((s) => s !== '')) {
     cur = cur + '/' + encodePath(seg);
     try {
       const res = await host.http.request('MKCOL', cur, headers, null);
-      if (res.status !== 201 && res.status !== 405 && res.status !== 200 && res.status !== 301) {
-        return false;
+      if (res.status !== 201 && res.status !== 405 && res.status !== 200) {
+        return '创建备份目录失败（HTTP ' + res.status + '）' + statusDetail(res);
       }
     } catch (e) {
-      host.logError('MKCOL 失败: ' + cur + ' ' + ((e as Error).message || ''));
-      return false;
+      return '创建备份目录请求失败，请检查网络与服务器配置';
     }
   }
-  return true;
+  return null;
 }
 
-// 从失败响应提取可读原因（去 XML 标签、截断），拼进错误消息给设置页展示
 function statusDetail(res: XimeHttpResponse): string {
-  let body = res.text || '';
-  body = body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
-  if (body === '') return '';
-  return ': ' + body.substring(0, 160);
+  const errors: Record<number,string> = {401:'认证失败',403:'权限不足',404:'该路径不存在',429:'请求过于频繁'};
+  return ': ' + (errors[res.status] || (res.status >= 500 ? '服务器错误' : res.status >= 300 && res.status < 400 ? '此操作不允许自动跳转' : '不支持的响应'));
 }
 
 // 仅供宿主 JVM 回归测试使用（JsEncodePathTest）；非插件契约字段，经 spread 并入，
@@ -147,12 +144,11 @@ const plugin = definePlugin({
         if (res.status === 401) return '认证失败（401），请检查账号与密码';
         if (res.status === 404) {
           // 目录不存在不算失败（首次备份会自动创建）
-          if (await ensureCollection(cfg, headers)) return null;
-          return '远端目录不存在且自动创建失败';
+          return await ensureCollection(cfg, headers);
         }
         return '服务器返回 HTTP ' + res.status + statusDetail(res);
       } catch (e) {
-        return (e as Error).message || '请求失败';
+        return '连接测试请求失败，请检查网络与服务器配置';
       }
     },
 
@@ -175,9 +171,8 @@ const plugin = definePlugin({
         if (res.status === 409 || res.status === 404) {
           // 父目录不存在：逐级创建后重试一次
           // （标准 DAV 报 409 Conflict；Alist/Nextcloud 等报 404）
-          if (!await ensureCollection(cfg, headers)) {
-            return { ok: false, message: '创建远端目录失败' };
-          }
+          const creationError = await ensureCollection(cfg, headers);
+          if (creationError) return { ok: false, message: creationError };
           res = await host.http.upload('PUT', url, headers, archiveId);
         }
         if (res.status === 200 || res.status === 201 || res.status === 204) {
@@ -186,26 +181,20 @@ const plugin = definePlugin({
         if (res.status === 401) return { ok: false, message: '认证失败（401），请检查账号与密码' };
         return { ok: false, message: '上传失败（HTTP ' + res.status + '）' + statusDetail(res) };
       } catch (e) {
-        return { ok: false, message: (e as Error).message || '上传请求失败' };
+        return { ok: false, message: '上传请求失败，请检查网络与服务器配置' };
       }
     },
 
     // 下载备份包：宿主流式落盘，返回 blob 句柄（宿主恢复流程消费，失败返回 null）
     async pull(id: string): Promise<string | null> {
-      if (!id || id === '') return null;
+      if (!id || !id.startsWith('/') || id.startsWith('//')) throw new Error('备份条目路径无效');
       const { origin, headers, error } = resolveBase();
-      if (error) return null;
-      try {
-        const res = await host.http.download('GET', origin + encodePath(id), headers);
-        if (res.status !== 200) {
-          host.logError('pull 失败: HTTP ' + res.status + statusDetail(res));
-          return null;
-        }
-        return res.blobId || null;
-      } catch (e) {
-        host.logError('pull 失败: ' + ((e as Error).message || ''));
-        return null;
-      }
+      if (error) throw new Error(error);
+      const res = await host.http.download('GET', origin + encodePath(id), headers);
+      const errors: Record<number,string> = {401:'认证失败',403:'读取权限不足',404:'该路径没有备份',429:'请求过于频繁'};
+      if (res.status !== 200) throw new Error('备份下载失败：' + (errors[res.status] || (res.status >= 500 ? '服务器错误' : '不支持的响应')) + '（HTTP ' + res.status + '）');
+      if (!res.blobId) throw new Error('备份下载内容为空');
+      return res.blobId;
     },
 
     // 列出远端备份
@@ -218,7 +207,7 @@ const plugin = definePlugin({
         if (res.status !== 207 && res.status !== 200) return null;
         return parseBackupList(res.text || '', basePath);
       } catch (e) {
-        host.logError('list 失败: ' + ((e as Error).message || ''));
+        host.logError('备份列表请求失败');
         return null;
       }
     },
@@ -233,7 +222,7 @@ const plugin = definePlugin({
         // 404：远端已不存在，视为删除成功
         return res.status === 204 || res.status === 200 || res.status === 404;
       } catch (e) {
-        host.logError('remove 失败: ' + ((e as Error).message || ''));
+        host.logError('删除备份请求失败');
         return false;
       }
     },

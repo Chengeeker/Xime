@@ -71,7 +71,7 @@ interface HttpHostApi {
      * @return 响应；2xx 时 [HttpResponse.blobId] 为落盘句柄、[HttpResponse.size] 为字节数；
      *   失败返回 null。落盘句柄需由宿主在搬运/恢复后 [BlobStore.release]
      */
-    fun download(
+    suspend fun download(
         method: String,
         url: String,
         headers: Map<String, String> = emptyMap(),

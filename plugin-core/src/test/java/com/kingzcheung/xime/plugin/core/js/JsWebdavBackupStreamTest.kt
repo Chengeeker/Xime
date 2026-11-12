@@ -101,6 +101,7 @@ class JsWebdavBackupStreamTest {
         /** 上传瞬间句柄解析到的文件（证明"插件给句柄、宿主读文件"） */
         var resolvedAtUpload: File? = null
         var mkcolCount = 0
+        var mkcolStatus = 201
         var failFirstPut = false
         var downloadBytes = ByteArray(0)
         var downloadStatus = 200
@@ -110,7 +111,7 @@ class JsWebdavBackupStreamTest {
             method: String, url: String, headers: Map<String, String>,
             body: ByteArray?, timeoutMillis: Int?
         ): HttpResponse? = when (method) {
-            "MKCOL" -> { mkcolCount++; HttpResponse(201) }
+            "MKCOL" -> { mkcolCount++; HttpResponse(mkcolStatus) }
             "PROPFIND" -> HttpResponse(207, emptyMap(), "<multistatus/>".toByteArray())
             else -> HttpResponse(404)
         }
@@ -127,7 +128,7 @@ class JsWebdavBackupStreamTest {
             return HttpResponse(201, mapOf("ETag" to "\"e1\""), ByteArray(0))
         }
 
-        override fun download(
+        override suspend fun download(
             method: String, url: String, headers: Map<String, String>, timeoutMillis: Int?
         ): HttpResponse? {
             if (downloadStatus != 200) {
@@ -226,6 +227,20 @@ class JsWebdavBackupStreamTest {
     }
 
     @Test(timeout = 60_000)
+    fun directoryPermissionFailureNamesTheStageAndStatus() = runBlocking {
+        val (adapter,http,_) = loadPlugin()
+        http.failFirstPut=true;http.mkcolStatus=403
+        val archive=File(tmp.root,"denied.zip").apply{writeBytes(byteArrayOf(1))}
+        try {
+            val result=adapter.pushBackup("denied.zip",archive)
+            assertFalse(result.ok)
+            assertTrue(result.message.orEmpty().contains("创建备份目录"))
+            assertTrue(result.message.orEmpty().contains("403"))
+            assertEquals(1,http.uploads.size)
+        }finally{adapter.onUnload()}
+    }
+
+    @Test(timeout = 60_000)
     fun `PUT 409 时逐级 MKCOL 后重试同一句柄`() {
         val (adapter, http, blobStore) = loadPlugin()
         http.failFirstPut = true
@@ -269,7 +284,8 @@ class JsWebdavBackupStreamTest {
         val (adapter, http, _) = loadPlugin()
         try {
             http.downloadStatus = 401
-            assertNull("非 200 应返回 null", runBlocking { adapter.pullBackup("/dav/xime_backup/Xime.zip") })
+            val failure=org.junit.Assert.assertThrows(IllegalStateException::class.java){runBlocking { adapter.pullBackup("/dav/xime_backup/Xime.zip") }}
+            assertTrue(failure.message!!.contains("401"))
 
             http.downloadStatus = 200
             http.returnUnknownBlob = true

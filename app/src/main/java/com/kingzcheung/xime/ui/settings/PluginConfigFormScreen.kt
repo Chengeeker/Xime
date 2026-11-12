@@ -41,6 +41,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
@@ -85,9 +86,39 @@ fun PluginConfigFormScreen(
     fallbackSectionTitle: String = tr(R.string.s_chajianpeizhi),
 ) {
     val context = LocalContext.current
-    val configStore = remember(pluginId) {
+    val focus=androidx.compose.ui.platform.LocalFocusManager.current
+    var resultMessage by remember{mutableStateOf<String?>(null)}
+    if(resultMessage!=null)BackupOutcomeDialog("配置保存结果",resultMessage!!){resultMessage=null}
+    val scope=rememberCoroutineScope()
+    var configGeneration by remember(pluginId){mutableStateOf(0)}
+    var readFailure by remember(pluginId){mutableStateOf<com.kingzcheung.xime.plugin.SecretReadFailure?>(null)}
+    var confirmRecovery by remember{mutableStateOf(false)}
+    var recovering by remember{mutableStateOf(false)}
+    val configStore = remember(pluginId,configGeneration) {
         PluginConfigStoreImpl(context.applicationContext as android.app.Application, pluginId)
     }
+    LaunchedEffect(configStore) {
+        try {withContext(Dispatchers.IO){configStore.keys().forEach(configStore::get)};readFailure=null}
+        catch(e:com.kingzcheung.xime.plugin.SecretReadFailure){readFailure=e;resultMessage=e.message}
+    }
+    if(confirmRecovery)androidx.compose.material3.AlertDialog(
+        onDismissRequest={if(!recovering)confirmRecovery=false},
+        title={Text("保留旧配置并重新设置")},
+        text={Text("会先重试读取；仍缺少密钥时，核对归档原加密资料后才清空当前插件配置。归档不代表旧资料已恢复。请重新填写服务器信息，再恢复原设备制作的密码备份。")},
+        confirmButton={TextButton(enabled=!recovering,onClick=hapticAction{
+            focus.clearFocus();recovering=true
+            scope.launch{
+                try{
+                    val archived=withContext(Dispatchers.IO){configStore.preserveUnreadableAndReset()}
+                    configGeneration++;readFailure=null;confirmRecovery=false
+                    resultMessage=if(archived)"原加密资料已归档保留，请重新填写配置；旧资料尚未恢复。"else"原密钥已恢复可用，已重新读取配置。"
+                }catch(e:kotlinx.coroutines.CancellationException){throw e}
+                catch(e:Exception){resultMessage=e.message?:"归档失败，原资料保留"}
+                finally{recovering=false}
+            }
+        }){Text(if(recovering)"处理中"else"保留并继续")}},
+        dismissButton={TextButton(enabled=!recovering,onClick=hapticAction{confirmRecovery=false}){Text("取消")}}
+    )
     // 调用方已带 schema（插件设置页已在 IO 读完）时直接用；否则本组件自己在 IO 读：
     // 组合期不进插件运行时（旧的 remember 同步调用会阻塞主线程，并与插件卸载/重载竞态）。
     val needLoad = schema.isEmpty()
@@ -116,15 +147,17 @@ fun PluginConfigFormScreen(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    if(readFailure?.recoverable==true && section==groupedFields.keys.firstOrNull())TextButton(
+                        onClick=hapticAction{focus.clearFocus();confirmRecovery=true}){Text("保留旧配置并重新设置")}
                     sectionFields.forEach { field ->
-                        UiNodeEditor(
+                        androidx.compose.runtime.key(configGeneration,field.key){UiNodeEditor(
                             field = field,
                             configStore = configStore,
                             options = field.options.ifEmpty {
                                 field.key?.let { dynamicOptions[it].orEmpty() } ?: emptyList()
                             },
                             plugin = plugin
-                        )
+                        )}
                     }
                 }
             }
@@ -139,7 +172,7 @@ fun PluginConfigFormScreen(
             ?.allowCustomHosts ?: false
         if (!allowCustom) return
         configStore.keys().forEach { key ->
-            configStore.get(key)?.let { value ->
+            runCatching{configStore.get(key)}.getOrElse{resultMessage=it.message?:"配置读取失败";null}?.let { value ->
                 NetworkPolicy.extractHttpHost(value)?.let { host ->
                     SettingsPreferences.authorizePluginHost(context, pluginId, host)
                 }
@@ -151,18 +184,20 @@ fun PluginConfigFormScreen(
     fun saveButton() {
         Button(
             onClick = hapticAction(Button@ {
+                focus.clearFocus();resultMessage=null
                 var allValid = true
                 fields.forEach { field ->
                     if (field.type == UiNodeType.SECRET && field.required && field.key != null) {
-                        val current = configStore.get(field.key!!)
+                        val current = runCatching{configStore.get(field.key!!)}.getOrElse{resultMessage=it.message?:"配置读取失败";null}
                         if (current.isNullOrBlank()) allValid = false
                     }
                 }
                 if (!allValid) {
-                    Toast.makeText(context, tr(R.string.s_qingtianxiebitianpeizhi), Toast.LENGTH_SHORT).show()
+                    focus.clearFocus();resultMessage=resultMessage?:tr(R.string.s_qingtianxiebitianpeizhi)
                     return@Button
                 }
                 autoAuthorizeConfiguredHosts()
+                if(resultMessage!=null)return@Button
                 Toast.makeText(context, tr(R.string.s_peizhiyibaocun), Toast.LENGTH_SHORT).show()
                 if (!embedded) onBack()
             }),
@@ -243,15 +278,17 @@ private fun UiNodeEditor(
     val scope = rememberCoroutineScope()
     // 表单字段必须绑定 configStore key；无 key 的节点（展示型误入表单）不渲染
     val key = field.key ?: return
+    val focus=androidx.compose.ui.platform.LocalFocusManager.current
+    val initial=remember(key,configStore){runCatching{configStore.get(key)}}
+    var resultMessage by remember(key){mutableStateOf<String?>(null)}
+    if(resultMessage!=null)BackupOutcomeDialog(if(key=="testConnection")"连接测试结果"else"配置保存结果",resultMessage!!){resultMessage=null}
     var buttonBusy by remember(key) { mutableStateOf(false) }
-    var value by rememberSaveable(key) {
-        mutableStateOf(configStore.get(key) ?: field.defaultValue ?: "")
-    }
+    var value by rememberSaveable(key) {mutableStateOf(initial.getOrNull()?:field.defaultValue?:"")}
     var showSecret by rememberSaveable(key) { mutableStateOf(false) }
     var expanded by rememberSaveable(key) { mutableStateOf(false) }
 
     fun persist() {
-        configStore.set(key, value)
+        try{configStore.set(key,value)}catch(e:Exception){focus.clearFocus();resultMessage=e.message?:"配置保存失败，原资料保留"}
     }
 
     when (field.type) {
@@ -468,25 +505,26 @@ private fun UiNodeEditor(
                         Toast.makeText(context, tr(R.string.s_weipeizhidongzuo), Toast.LENGTH_SHORT).show()
                         return@Button
                     }
-                    buttonBusy = true
+                    if(buttonBusy)return@Button
+                    focus.clearFocus();resultMessage=null;buttonBusy = true
                     scope.launch {
                         // 结果语义：null/空 = 成功（动作无错误消息）；非空 = 失败原因。
                         // 抛异常也必须报错——曾经 runCatching{}.getOrNull() 把异常吞成 null，
                         // 于是动作报错也会提示"成功"（issue #1061 假成功的一半来源）。
-                        val outcome = withContext(Dispatchers.IO) {
+                        val outcome = try{withContext(Dispatchers.IO) {
                             runCatching { plugin.onAction(action) }
-                        }
-                        buttonBusy = false
+                        }}finally{buttonBusy=false}
                         val failure = outcome.exceptionOrNull()
+                        if(failure is kotlinx.coroutines.CancellationException)throw failure
                         val error = if (failure != null) {
                             tr(R.string.s_zhixingshibai, failure.message ?: failure.javaClass.simpleName)
                         } else {
                             outcome.getOrNull()
                         }
                         if (error.isNullOrBlank()) {
-                            Toast.makeText(context, tr(R.string.s_chenggong), Toast.LENGTH_SHORT).show()
+                            resultMessage=tr(R.string.s_chenggong)
                         } else {
-                            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+                            resultMessage=error
                         }
                     }
                 }),

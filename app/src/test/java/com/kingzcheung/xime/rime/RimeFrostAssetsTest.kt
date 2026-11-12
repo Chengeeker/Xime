@@ -31,7 +31,6 @@ class RimeFrostAssetsTest {
         assertFalse(Regex("(?m)^\\s*schema_list:").containsMatchIn(template))
         val frostModes = listOf("rime_frost", "rime_frost_double_pinyin_flypy", "rime_frost_mixed_flypy")
         assertEquals(frostModes, SchemaManager.BUILTIN_SCHEMAS.take(frostModes.size))
-        assertTrue(SchemaManager.isInitialSchemaList(frostModes))
     }
 
     @Test

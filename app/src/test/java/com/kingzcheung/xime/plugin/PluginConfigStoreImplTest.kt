@@ -41,6 +41,7 @@ class PluginConfigStoreImplTest {
             editor
         }
         `when`(editor.apply()).then {}
+        `when`(editor.commit()).thenReturn(true)
         `when`(prefs.getString(org.mockito.kotlin.any(), org.mockito.kotlin.anyOrNull())).thenAnswer {
             stored[it.getArgument(0)]
         }

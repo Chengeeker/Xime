@@ -145,8 +145,8 @@ class BackupManagerTest {
 
         val result = restore(filesDir, bytes)
 
-        // id 含路径分隔符：不写 prefs、不落盘（条目被忽略），恢复本身不失败
-        assertTrue(result.isSuccess)
+        // 先完整校验，非法路径使整个恢复停止，未写入任何资料。
+        assertTrue(result.isFailure)
         assertTrue(restoredPrefs.isEmpty())
         assertTrue(!File(filesDir, "evil.json").exists())
     }
@@ -271,7 +271,7 @@ class BackupManagerTest {
     }
 
     @Test
-    fun `restore ignores manifest id with path separators`() {
+    fun `restore rejects manifest id with path separators`() {
         val filesDir = tempDir.newFolder("files")
         val bytes = zipOfText(
             mapOf("${BackupManager.META_PREFIX}schemas/manifests/../evil.json" to "boom")
@@ -279,8 +279,8 @@ class BackupManagerTest {
 
         val result = restore(filesDir, bytes)
 
-        // 非法 id 条目跳过（恢复本身不失败），不得写到 .manifests 之外
-        assertTrue(result.isSuccess)
+        // 非法路径导致整个包被拒绝，不允许部分落盘。
+        assertTrue(result.isFailure)
         assertFalse(File(filesDir, "evil.json").exists())
         assertFalse(File(tempDir.root, "evil.json").exists())
     }
@@ -386,4 +386,26 @@ class BackupManagerTest {
         assertFalse("快照不是 leveldb", BackupManager.isUserDbLeveldbEntry("sync/id/pinyin_simp.userdb.txt"))
         assertFalse("普通配置照常落盘", BackupManager.isUserDbLeveldbEntry("default.custom.yaml"))
     }
+    @Test fun invalidLateEntryDoesNotChangeEarlierFile() {
+        val dir=tempDir.newFolder("atomic")
+        val file=File(dir,"rime/default.yaml").apply{parentFile.mkdirs();writeText("original")}
+        assertTrue(restore(dir,zipOfText(linkedMapOf("default.yaml" to "incoming","../escape" to "bad"))).isFailure)
+        assertEquals("original",file.readText());assertTrue(restoredPrefs.isEmpty())
+    }
+    @Test fun settingsFailureRollsBackWrittenFiles() {
+        val dir=tempDir.newFolder("rollback")
+        val file=File(dir,"rime/default.yaml").apply{parentFile.mkdirs();writeText("original")}
+        val result=BackupManager.restoreArchive(dir,{_,_->error("synthetic disk error")},
+            zipOfText(linkedMapOf("default.yaml" to "incoming","_xime_backup/settings.json" to "{}")))
+        assertTrue(result.isFailure);assertEquals("original",file.readText())
+    }
+    @Test fun incorrectPasswordBeforeCommitLeavesFilesUntouched() {
+        val dir=tempDir.newFolder("password")
+        val file=File(dir,"rime/default.yaml").apply{parentFile.mkdirs();writeText("original")}
+        val manifest="""{"app":"com.kingzcheung.xime","version":2,"backup_mode":"safe"}"""
+        val result=restore(dir,zipOfText(linkedMapOf("default.yaml" to "incoming","_xime_backup/backup-manifest.json" to manifest,
+            "_xime_backup/portable-plugin-configs-v1.bin" to "invalid")))
+        assertTrue(result.isFailure);assertEquals("original",file.readText())
+    }
+
 }

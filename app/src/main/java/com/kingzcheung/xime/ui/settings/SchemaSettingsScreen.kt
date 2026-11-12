@@ -89,7 +89,7 @@ fun SchemaSettingsContent(
     }
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_shurufangan)) },
@@ -157,7 +157,7 @@ fun SchemaSettingsContent(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 ),
             )
@@ -281,7 +281,7 @@ private fun ActivePackageCard(
         modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor()),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Row(
@@ -348,7 +348,7 @@ private fun SchemaToggleItem(
             containerColor = if (isCurrent)
                 MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.4f)
             else
-                MaterialTheme.colorScheme.surfaceContainerLow
+                MaterialTheme.colorScheme.settingsCardColor()
         ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {

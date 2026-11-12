@@ -47,19 +47,22 @@ class HttpHostApiImpl(
     }
 
     private val client: OkHttpClient = OkHttpClient.Builder()
+        .followRedirects(!pluginId.endsWith(".webdav_backup"))
+        .followSslRedirects(!pluginId.endsWith(".webdav_backup"))
+        .callTimeout(60,TimeUnit.SECONDS)
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .writeTimeout(30, TimeUnit.SECONDS)
         .addInterceptor { chain ->
             val request = chain.request()
-            Log.d(TAG, "[$pluginId] >>> ${request.method} ${request.url}")
+            Log.d(TAG, "[$pluginId] >>> ${request.method}")
             val start = System.currentTimeMillis()
             try {
                 val resp = chain.proceed(request)
                 Log.d(TAG, "[$pluginId] <<< ${resp.code} in ${System.currentTimeMillis() - start}ms")
                 resp
             } catch (e: Exception) {
-                Log.d(TAG, "[$pluginId] <<< FAIL ${e.message} in ${System.currentTimeMillis() - start}ms")
+                Log.d(TAG, "[$pluginId] <<< FAIL ${e.javaClass.simpleName} in ${System.currentTimeMillis() - start}ms")
                 throw e
             }
         }
@@ -108,7 +111,7 @@ class HttpHostApiImpl(
      * 流式下载：2xx 正文边收边写 cacheDir 暂存文件（上限 [PluginBlobStore.MAX_BLOB_BYTES]），
      * 登记为 blob 后返回句柄；非 2xx 仍按内存响应返回（错误页很小，便于插件展示原因）。
      */
-    override fun download(
+    override suspend fun download(
         method: String,
         url: String,
         headers: Map<String, String>,
@@ -116,6 +119,9 @@ class HttpHostApiImpl(
     ): HttpResponse? {
         if (!authorize(url)) return null
         lastErrorMsg = null
+        if(pluginId.endsWith(".webdav_backup") && method.equals("GET",true)) {
+            return BackupDownload(effectiveClient(timeoutMillis),blobStore,pluginId,::authorize).get(url,headers)
+        }
         return execute(method, url, headers, null, timeoutMillis) { response ->
             if (response.code !in 200..299) {
                 return@execute toHttpResponse(response)
@@ -219,13 +225,13 @@ class HttpHostApiImpl(
             }
             call.execute().use(read)
         } catch (e: Exception) {
-            lastErrorMsg = e.message ?: "request failed"
-            Log.e(TAG, "[$pluginId] HTTP $method $url failed", e)
+            lastErrorMsg = "HTTP 请求失败或超时，请检查网络后重试"
+            Log.e(TAG, "[$pluginId] HTTP $method failed (${e.javaClass.simpleName})")
             PluginErrorLog.logError(
                 pluginId,
-                "HTTP 请求失败 ($method $url)",
-                e.message ?: "request failed",
-                e,
+                "HTTP 请求失败 ($method)",
+                "网络请求失败或超时",
+                null,
                 category = com.kingzcheung.xime.plugin.core.security.ErrorCategory.HTTP_ERROR
             )
             null
@@ -251,7 +257,15 @@ class HttpHostApiImpl(
     private fun toHttpResponse(response: Response): HttpResponse {
         val headers = HashMap<String, String>()
         response.headers.forEach { (k, v) -> headers[k] = v }
-        val bytes = response.body?.bytes() ?: ByteArray(0)
+        val bytes = if(pluginId.endsWith(".webdav_backup")) {
+            val body=response.body
+            require(body==null || body.contentLength()<=4L*1024*1024){"WebDAV 响应超过上限"}
+            body?.byteStream()?.use{input->
+                val output=java.io.ByteArrayOutputStream();val buffer=ByteArray(65536);var size=0
+                while(true){val n=input.read(buffer);if(n<0)break;size+=n;require(size<=4*1024*1024){"WebDAV 响应超过上限"};output.write(buffer,0,n)}
+                output.toByteArray()
+            }?:ByteArray(0)
+        }else response.body?.bytes() ?: ByteArray(0)
         return HttpResponse(
             status = response.code,
             headers = headers,

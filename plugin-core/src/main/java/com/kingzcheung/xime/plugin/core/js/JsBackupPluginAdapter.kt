@@ -33,37 +33,38 @@ class JsBackupPluginAdapter(
 ) : JsPluginAdapter(runtime, pluginContext), BackupPlugin {
 
     override suspend fun pushBackup(name: String, archive: File): BackupResult =
-        withContext(Dispatchers.IO) {
+        kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
             val store = blobStore
-                ?: return@withContext BackupResult(ok = false, message = "宿主未提供流式传输能力")
+                ?: return@runInterruptible BackupResult(ok = false, message = "宿主未提供流式传输能力")
             // 所有权仍属调用方（BackupManager）：release 只注销句柄，不删文件
             val blobId = store.register(pluginContext.pluginInfo.id, archive, owned = false)
             try {
                 val result = runtime.callAsync(
                     JsPluginContract.PATH_BACKUP_PUSH,
-                    mapOf("name" to name, "size" to archive.length(), "archiveId" to blobId)
+                    mapOf("name" to name, "size" to archive.length(), "archiveId" to blobId),failOnError=true
                 )
                 parseBackupResult(result)
-            } catch (e: Exception) {
-                Log.e("JsBackup", "pushBackup failed", e)
+            } catch (cancelled:kotlinx.coroutines.CancellationException) {throw cancelled
+        } catch (e: Exception) {
+                Log.e("JsBackup", "pushBackup failed")
                 BackupResult(ok = false, message = e.message ?: "pushBackup failed")
             } finally {
                 store.release(blobId)
             }
         }
 
-    override suspend fun pullBackup(id: String): BackupDownload? = withContext(Dispatchers.IO) {
+    override suspend fun pullBackup(id: String): BackupDownload? = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
         try {
-            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_PULL, id)
+            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_PULL, id,failOnError=true)
             val blobId = (JsScriptRuntime.jsToKotlin(result) as? String)?.takeIf { it.isNotEmpty() }
-                ?: return@withContext null
-            val store = blobStore ?: return@withContext null
+                ?: return@runInterruptible null
+            val store = blobStore ?: return@runInterruptible null
             val file = store.resolve(pluginContext.pluginInfo.id, blobId)
-                ?: return@withContext null
+                ?: return@runInterruptible null
             BackupDownload(blobId = blobId, file = file, size = file.length())
+        } catch (cancelled:kotlinx.coroutines.CancellationException) {throw cancelled
         } catch (e: Exception) {
-            Log.e("JsBackup", "pullBackup failed", e)
-            null
+            throw IllegalStateException(e.message?:"备份下载失败")
         }
     }
 
@@ -71,10 +72,10 @@ class JsBackupPluginAdapter(
         blobStore?.release(blobId)
     }
 
-    override suspend fun listBackups(): List<RemoteBackupEntry>? = withContext(Dispatchers.IO) {
+    override suspend fun listBackups(): List<RemoteBackupEntry>? = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
         try {
-            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_LIST)
-            val items = JsScriptRuntime.jsToKotlin(result) as? List<*> ?: return@withContext null
+            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_LIST,failOnError=true)
+            val items = JsScriptRuntime.jsToKotlin(result) as? List<*> ?: return@runInterruptible null
             items.mapNotNull { item ->
                 val map = JsScriptRuntime.jsToKotlin(item) as? Map<*, *> ?: return@mapNotNull null
                 val id = map["id"]?.toString()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
@@ -85,30 +86,33 @@ class JsBackupPluginAdapter(
                     size = (map["size"] as? Number)?.toLong() ?: -1L
                 )
             }
+        } catch (cancelled:kotlinx.coroutines.CancellationException) {throw cancelled
         } catch (e: Exception) {
-            Log.e("JsBackup", "listBackups failed", e)
+            Log.e("JsBackup", "listBackups failed")
             null
         }
     }
 
-    override suspend fun deleteBackup(id: String): Boolean = withContext(Dispatchers.IO) {
+    override suspend fun deleteBackup(id: String): Boolean = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
         try {
-            (JsScriptRuntime.jsToKotlin(runtime.callAsync(JsPluginContract.PATH_BACKUP_REMOVE, id)) as? Boolean) ?: false
+            (JsScriptRuntime.jsToKotlin(runtime.callAsync(JsPluginContract.PATH_BACKUP_REMOVE, id,failOnError=true)) as? Boolean) ?: false
+        } catch (cancelled:kotlinx.coroutines.CancellationException) {throw cancelled
         } catch (e: Exception) {
-            Log.e("JsBackup", "deleteBackup failed", e)
+            Log.e("JsBackup", "deleteBackup failed")
             false
         }
     }
 
-    override suspend fun testConnection(): String? = withContext(Dispatchers.IO) {
+    override suspend fun testConnection(): String? = kotlinx.coroutines.runInterruptible(Dispatchers.IO) {
         try {
-            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_TEST)
+            val result = runtime.callAsync(JsPluginContract.PATH_BACKUP_TEST,failOnError=true)
             val v = JsScriptRuntime.jsToKotlin(result)
             when (v) {
                 null -> null
                 is Boolean -> if (v) null else "连接失败"
                 else -> v.toString().takeIf { it.isNotBlank() }
             }
+        } catch (cancelled:kotlinx.coroutines.CancellationException) {throw cancelled
         } catch (e: Exception) {
             e.message ?: "connection test failed"
         }

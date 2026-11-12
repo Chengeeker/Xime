@@ -123,6 +123,14 @@ fun BackupSettingsContent(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
+    val focus=androidx.compose.ui.platform.LocalFocusManager.current
+    var resultMessage by remember{mutableStateOf<String?>(null)}
+    var resultTitle by remember{mutableStateOf("备份结果")}
+    var showBackupOptions by remember{mutableStateOf(false)}
+    var includeCredentials by remember{mutableStateOf(false)}
+    var backupPassword by remember{mutableStateOf("")}
+    var restorePassword by remember{mutableStateOf("")}
+    if(resultMessage!=null)BackupOutcomeDialog(resultTitle,resultMessage!!){resultMessage=null}
     val installedPlugins = remember { ExtensionManager.getAllInstalledPlugins() }
     val backupPlugins = remember { installedPlugins.filter { it.category == PluginCategory.BACKUP } }
     val syncPlugins = remember { ExtensionManager.getEnabledBackupPlugins(context) }
@@ -250,44 +258,36 @@ fun BackupSettingsContent(
     }
 
     //备份区主动作：刷新词条快照 → 打整机完整包 → 经备份插件上云（流式，不占内存）
-    fun runCloudBackup() {
-        val plugin = activePlugin?.second ?: return
-        busyOp = "backup"
-        scope.launch(Dispatchers.IO) {
-            val result = BackupManager.backupNow(context, plugin)
-            withContext(Dispatchers.Main) {
-                busyOp = null
-                if (result.ok) {
-                    lastBackupAt = SettingsPreferences.getLastBackupAt(context)
-                    SettingsPreferences.setLastBackupError(context, null)
-                    backupError = null
-                } else {
-                    val error = result.message ?: tr(R.string.s_weizhicuowu)
-                    SettingsPreferences.setLastBackupError(context, error)
-                    backupError = error
-                }
-                snackbar.showSnackbar(
-                    if (result.ok) tr(R.string.s_beifenwancheng) + (result.message ?: "")
-                    else tr(R.string.s_beifenshibai_yuanyin, result.message ?: tr(R.string.s_weizhicuowu))
-                )
-            }
+    fun runCloudBackup(password:CharArray?) {
+        if(busyOp!=null)return
+        focus.clearFocus();resultMessage=null;resultTitle="备份结果"
+        val plugin=activePlugin?.second?:return
+        busyOp="backup"
+        scope.launch {
+            try {
+                val result=withContext(Dispatchers.IO){BackupManager.backupNow(context,plugin,password)}
+                if(result.ok){lastBackupAt=SettingsPreferences.getLastBackupAt(context);backupError=null;SettingsPreferences.setLastBackupError(context,null)}
+                resultMessage=if(result.ok)"备份完成。"+(result.message?:"") else result.message?:"备份失败，请重试"
+            }catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled}
+            catch(e:Exception){resultMessage=e.message?:"备份失败，请检查配置和存储空间"}
+            finally{password?.fill('\u0000');backupPassword="";busyOp=null}
         }
     }
 
-    //云端恢复：覆盖同名文件，词条快照由引擎就绪后按时间戳合并
-    fun runRestore(entry: RemoteBackupEntry) {
-        val plugin = activePlugin?.second ?: return
-        busyOp = "restore:${entry.id}"
-        scope.launch(Dispatchers.IO) {
-            val result = BackupManager.restore(context, plugin, entry.id)
-            withContext(Dispatchers.Main) {
-                busyOp = null
-                lastSyncAt = SettingsPreferences.getLastRimeSyncAt(context)
-                snackbar.showSnackbar(
-                    if (result.isSuccess) tr(R.string.s_huifuwancheng_zhongqiyingyongh_d8f09)
-                    else tr(R.string.s_huifushibai, result.exceptionOrNull()?.message)
-                )
-            }
+    fun runRestore(entry:RemoteBackupEntry) {
+        if(busyOp!=null)return
+        focus.clearFocus();resultMessage=null;resultTitle="恢复结果"
+        val plugin=activePlugin?.second?:return
+        val password=restorePassword.takeIf{it.isNotEmpty()}?.toCharArray();restorePassword=""
+        busyOp="restore:${entry.id}"
+        scope.launch {
+            try {
+                val result=withContext(Dispatchers.IO){BackupManager.restore(context,plugin,entry.id,password)}
+                lastSyncAt=SettingsPreferences.getLastRimeSyncAt(context)
+                resultMessage=result.getOrElse{if(it.suppressed.isNotEmpty())"恢复失败，部分回退未完成，请保留本机资料并重试"else it.message?:"恢复失败，请检查备份和存储空间"}
+            }catch(cancelled:kotlinx.coroutines.CancellationException){throw cancelled}
+            catch(e:Exception){resultMessage=if(e.suppressed.isNotEmpty())"恢复失败，部分回退未完成，请保留本机资料并重试"else e.message?:"恢复失败，请重试"}
+            finally{password?.fill('\u0000');busyOp=null}
         }
     }
 
@@ -470,7 +470,7 @@ fun BackupSettingsContent(
                         blocking = blocking,
                         serviceReady = serviceReady,
                         error = backupError,
-                        onBackup = ::runCloudBackup,
+                        onBackup = {focus.clearFocus();showBackupOptions=true},
                         onConfigure = { activePlugin?.first?.let(onNavigateToPluginSettings) },
                         onRefresh = ::refreshRemoteList,
                         remoteList = remoteList,
@@ -610,6 +610,17 @@ fun BackupSettingsContent(
         )
     }
 
+    if(showBackupOptions)AlertDialog(onDismissRequest={showBackupOptions=false;backupPassword=""},title={Text("备份到云端")},
+        text={Column(Modifier.verticalScroll(rememberScrollState())) {
+            Row(verticalAlignment=Alignment.CenterVertically){androidx.compose.material3.Checkbox(checked=includeCredentials,onCheckedChange={includeCredentials=it});Text("包含插件凭据的全量备份")}
+            Text(if(includeCredentials)"全量备份包含插件密码和 Token。使用独立备份密码加密，换机恢复需要相同密码，无法找回。方案、词库和普通设置仍为 ZIP 内普通文件。"else"安全备份包含方案、词库与设置，不包含插件账号密码。")
+            if(includeCredentials)androidx.compose.material3.OutlinedTextField(value=backupPassword,onValueChange={backupPassword=it},label={Text("独立备份密码（至少 8 个字符）")},visualTransformation=androidx.compose.ui.text.input.PasswordVisualTransformation(),singleLine=true)
+        }},confirmButton={TextButton(onClick=hapticAction{
+            focus.clearFocus()
+            if(includeCredentials && backupPassword.length !in 8..1024){resultTitle="备份结果";resultMessage="备份密码至少需要 8 个字符"}
+            else{showBackupOptions=false;runCloudBackup(if(includeCredentials)backupPassword.toCharArray()else null)}
+        }){Text("开始备份")}},dismissButton={TextButton(onClick=hapticAction{showBackupOptions=false;backupPassword=""}){Text("取消")}})
+
     // 删除云端备份：不可恢复，先确认
     pendingDeleteEntry?.let { entry ->
         AlertDialog(
@@ -633,13 +644,13 @@ fun BackupSettingsContent(
     // 云端恢复：覆盖式（自造词合并），先确认
     pendingRestoreEntry?.let { entry ->
         AlertDialog(
-            onDismissRequest = { pendingRestoreEntry = null },
+            onDismissRequest = { pendingRestoreEntry = null;restorePassword="" },
             title = { Text(tr(R.string.s_huifudaobenji)) },
             text = {
-                Text(
-                    tr(R.string.s_ba_fugaidaobenji_huifutongming_4a142, entry.name) +
-                        tr(R.string.s_zizaocianshijianchuohebing_ben_b0e5d)
-                )
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(tr(R.string.s_ba_fugaidaobenji_huifutongming_4a142,entry.name)+tr(R.string.s_zizaocianshijianchuohebing_ben_b0e5d))
+                    androidx.compose.material3.OutlinedTextField(value=restorePassword,onValueChange={restorePassword=it},label={Text("独立备份密码（安全/旧备份留空）")},visualTransformation=androidx.compose.ui.text.input.PasswordVisualTransformation(),singleLine=true)
+                }
             },
             confirmButton = {
                 TextButton(onClick = hapticAction(TextButton@ {
@@ -648,7 +659,7 @@ fun BackupSettingsContent(
                 })) { Text("恢复") }
             },
             dismissButton = {
-                TextButton(onClick = hapticAction(TextButton@ { pendingRestoreEntry = null })) { Text("取消") }
+                TextButton(onClick = hapticAction(TextButton@ { pendingRestoreEntry = null;restorePassword="" })) { Text("取消") }
             }
         )
     }
@@ -656,37 +667,36 @@ fun BackupSettingsContent(
     // 本地完整方案包导入：覆盖式恢复，先确认再解包
     pendingLocalImportUri?.let { uri ->
         AlertDialog(
-            onDismissRequest = { pendingLocalImportUri = null },
+            onDismissRequest = { pendingLocalImportUri = null;restorePassword="" },
             title = { Text(tr(R.string.s_congbendihuifuwanzhengbeifen)) },
             text = {
-                Text(
-                    tr(R.string.s_huifugai_rime_muluxiatongmingp_8d548) +
-                        tr(R.string.s_zizaocianshijianchuohebing_buh_d11d6)
-                )
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(tr(R.string.s_huifugai_rime_muluxiatongmingp_8d548)+tr(R.string.s_zizaocianshijianchuohebing_buh_d11d6))
+                    androidx.compose.material3.OutlinedTextField(value=restorePassword,onValueChange={restorePassword=it},label={Text("独立备份密码（安全/旧备份留空）")},visualTransformation=androidx.compose.ui.text.input.PasswordVisualTransformation(),singleLine=true)
+                }
             },
             confirmButton = {
                 TextButton(
                     onClick = hapticAction(TextButton@ {
                         pendingLocalImportUri = null
+                        if(busyOp!=null)return@TextButton
+                        focus.clearFocus();resultMessage=null;resultTitle="恢复结果"
+                        val password=restorePassword.takeIf{it.isNotEmpty()}?.toCharArray();restorePassword=""
                         busyOp = "importLocal"
-                        scope.launch(Dispatchers.IO) {
-                            val result = BackupManager.importLocal(context, uri)
-                            withContext(Dispatchers.Main) {
-                                busyOp = null
-                                lastSyncAt = SettingsPreferences.getLastRimeSyncAt(context)
-                                snackbar.showSnackbar(
-                                    result.fold(
-                                        onSuccess = { tr(R.string.s_yicongbendihuifu_zhongqiyingyo_6fcd1) },
-                                        onFailure = { tr(R.string.s_daorushibai_2, it.message) }
-                                    )
-                                )
-                            }
+                        scope.launch {
+                            try {
+                                val result=withContext(Dispatchers.IO){BackupManager.importLocal(context,uri,password)}
+                                lastSyncAt=SettingsPreferences.getLastRimeSyncAt(context)
+                                resultMessage=result.getOrElse{if(it.suppressed.isNotEmpty())"恢复失败，部分回退未完成，请保留本机资料并重试"else it.message?:"恢复失败，请重试"}
+                            }catch(e:kotlinx.coroutines.CancellationException){throw e}
+                            catch(e:Exception){resultMessage=if(e.suppressed.isNotEmpty())"恢复失败，部分回退未完成，请保留本机资料并重试"else e.message?:"恢复失败，请重试"}
+                            finally{password?.fill('\u0000');busyOp=null}
                         }
                     })
                 ) { Text("导入") }
             },
             dismissButton = {
-                TextButton(onClick = hapticAction(TextButton@ { pendingLocalImportUri = null })) { Text("取消") }
+                TextButton(onClick = hapticAction(TextButton@ { pendingLocalImportUri = null;restorePassword="" })) { Text("取消") }
             }
         )
     }

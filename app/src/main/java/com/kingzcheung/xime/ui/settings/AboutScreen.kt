@@ -169,7 +169,7 @@ fun AboutContent(
     
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_guanyu)) },
@@ -182,7 +182,7 @@ fun AboutContent(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
@@ -440,7 +440,7 @@ fun PrivacyPolicyContent(
     onBack: () -> Unit
 ) {
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_yinsicelve)) },
@@ -453,7 +453,7 @@ fun PrivacyPolicyContent(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
@@ -468,7 +468,7 @@ fun PrivacyPolicyContent(
             item {
                 Card(
                     modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor()),
                     elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
                 ) {
                     Column(
@@ -550,7 +550,7 @@ fun LicensesContent(
     val uriHandler = LocalUriHandler.current
     
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.surface,
+        containerColor = MaterialTheme.colorScheme.settingsCardColor(),
         topBar = {
             TopAppBar(
                 title = { Text(tr(R.string.s_kaiyuanxukezheng)) },
@@ -563,7 +563,7 @@ fun LicensesContent(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    containerColor = MaterialTheme.colorScheme.settingsCardColor(),
                     titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
@@ -583,7 +583,7 @@ fun LicensesContent(
                         .clickable {
                             uriHandler.openUri(item.url)
                         },
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.settingsCardColor())
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp)

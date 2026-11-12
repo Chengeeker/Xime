@@ -1,5 +1,6 @@
 package com.kingzcheung.xime.settings
 
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -124,9 +125,9 @@ class KeyboardConfigFallbackTest {
     @Test
     fun `shadow 未配置时回落代码默认值`() {
         val merged = KeysConfigHelper.mergeShadowConfigs(null, null)
-        assertTrue(merged.enabled)
+        assertFalse(merged.enabled)
         assertEquals(1, merged.elevation)
-        assertEquals(8, merged.shapeRadius)
+        assertEquals(6, merged.shapeRadius)
     }
 
     // ── key ──
@@ -134,7 +135,7 @@ class KeyboardConfigFallbackTest {
     @Test
     fun `parseKeyboardKeyYamlText 未配置时返回默认 cornerRadius`() {
         val cfg = KeysConfigHelper.parseKeyboardKeyYamlText("keyboard:\n  key:\n    spacing_x: 3\n")!!
-        assertEquals(8, cfg.cornerRadius)
+        assertEquals(6, cfg.cornerRadius)
         assertEquals(3f, cfg.spacingX!!, 0.001f)
     }
 

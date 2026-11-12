@@ -48,6 +48,10 @@ jobs:
 
       - name: Decide whether to build
         id: decide
+        env:
+          HAS_SIGNING_KEY: ${{ secrets.SIGNING_KEY != '' }}
+          HAS_ALIAS: ${{ secrets.ALIAS != '' }}
+          HAS_KEYSTORE_PASSWORD: ${{ secrets.KEY_STORE_PASSWORD != '' }}
         run: |
           if [ "${{ steps.release_check.outputs.release_today }}" = "true" ]; then
             echo "should_build=false" >> "$GITHUB_OUTPUT"
@@ -55,6 +59,10 @@ jobs:
           elif [ "${{ steps.check.outputs.has_new_commits }}" = "false" ]; then
             echo "should_build=false" >> "$GITHUB_OUTPUT"
             echo "reason=No new commits since last nightly"
+          elif [ "$HAS_SIGNING_KEY" != "true" ] || [ "$HAS_ALIAS" != "true" ] || [ "$HAS_KEYSTORE_PASSWORD" != "true" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Nightly skipped because release signing is not configured."
+            echo "Nightly skipped because release signing is not configured." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "should_build=true" >> "$GITHUB_OUTPUT"
             echo "reason=New commits to build"

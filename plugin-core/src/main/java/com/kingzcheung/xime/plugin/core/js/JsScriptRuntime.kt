@@ -1379,8 +1379,8 @@ class JsScriptRuntime(
      * @param args 参数（null/Boolean/Int/Long/Double/String/Map/List/ByteArray/Uint8Array）
      * @return 返回值（已转纯 Kotlin 结构）；方法不存在 / rejected / 报错 / 超时返回 null
      */
-    fun callAsync(name: String, vararg args: Any?): Any? {
-        if (!loaded || closed) return null
+    fun callAsync(name: String, vararg args: Any?, failOnError:Boolean=false): Any? {
+        if (!loaded || closed) {if(failOnError)error("插件尚未就绪，请重试");return null}
         return try {
             val (argsJs, binaries) = argsExpr(args.toList())
             val invoke = callExpr(name, argsJs)
@@ -1392,13 +1392,14 @@ class JsScriptRuntime(
             }
             val value = when (result) {
                 is GuardResult.Ok -> result.value
-                GuardResult.TimedOut -> return null
+                GuardResult.TimedOut -> {if(failOnError)error("插件操作超时或已取消，请重试");return null}
             }
             val stash = jsToKotlin(value) as? Map<*, *> ?: return null
             when ((stash["status"] as? Number)?.toInt()) {
                 1 -> jsToKotlin(stash["result"])
                 2 -> {
                     val message = stash["error"]?.toString() ?: "未知错误"
+                    if(failOnError)throw IllegalStateException(message)
                     Log.e(TAG, "CallAsync '$name' rejected for $pluginId: $message")
                     api.log("CallAsync '$name' rejected: $message")
                     null
@@ -1406,6 +1407,7 @@ class JsScriptRuntime(
                 else -> null
             }
         } catch (e: Exception) {
+            if(failOnError)throw e
             Log.e(TAG, "CallAsync '$name' failed for $pluginId: ${e.message}", e)
             api.log("CallAsync '$name' failed: ${e.message}")
             logScriptError("异步调用 $name", e)
